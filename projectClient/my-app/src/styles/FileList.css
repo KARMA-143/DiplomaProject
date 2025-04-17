@@ -1,0 +1,8 @@
+.file-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 16px;
+    justify-items: center;
+    width: 100%;
+    box-sizing: border-box;
+}
