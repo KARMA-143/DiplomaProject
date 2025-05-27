@@ -1,0 +1,7 @@
+.member-card {
+    background: #fff;
+}
+
+.member-card:hover {
+    background: #efefef;
+}

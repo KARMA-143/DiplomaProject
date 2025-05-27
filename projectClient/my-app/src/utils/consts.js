@@ -1,8 +1,13 @@
 export const MAIN_ROUTE="/";
 export const USER_ROUTE="/user";
-export const COURSE_PAGE_ROUTE="/course/:id";
+export const COURSE_PAGE_ROUTE="/course/:id/:tab";
 export const ACTIVATION_ROUTE="/activation"
 export const JOIN_COURSE_PAGE_ROUTE="/course/join/:code"
 export const API_URL="http://localhost:5000/api";
 export const SERVER_URL="http://localhost:5000";
 export const APP_URL="http://localhost:3000";
+export const INVITATION_ROUTE="/invitation";
+export const TASK_CREATE_ROUTE="/course/:id/task/create";
+export const TEST_CREATE_ROUTE="/course/:id/test/create";
+export const TASK_PAGE_ROUTE="/course/:id/task/:taskId";
+export const TEST_PAGE_ROUTE="/course/:id/test/:testId";

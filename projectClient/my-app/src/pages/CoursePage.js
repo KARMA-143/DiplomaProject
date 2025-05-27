@@ -10,53 +10,62 @@ import CourseFeed from "../components/CourseFeed";
 import AssignmentsList from "../components/AssignmentsList";
 import MembersList from "../components/MembersList";
 import {Context} from "../index";
+import {observer} from "mobx-react-lite";
 
 const CoursePage = () => {
-    const {id}=useParams();
+    const {id, tab}=useParams();
     const navigate=useNavigate();
-    const [tabValue, setTabValue] = React.useState(1);
+    const [tabValue, setTabValue] = React.useState(undefined);
     const [loading, setLoading] = React.useState(true);
     const {CourseContent, SnackbarStore} = useContext(Context);
 
     useEffect(() => {
         getCourseById(id).then(r=>{
-            CourseContent.setCourseContent(r.data);
+            CourseContent.course = r.data;
+            if(!["feed", "assignments", "members"].includes(tab)){
+                navigate(`/course/${id}/feed`, { replace: true });
+            } else {
+                setTabValue(tab);
+            }
         })
             .catch((err)=>{
                 if(err.status === 400){
                     navigate(MAIN_ROUTE, {replace: true});
                 }
-                SnackbarStore.show(err.response.data.message, "error");
+                else{
+                    SnackbarStore.show(err.response.data.message, "error");
+                }
             })
             .finally(()=>{
                 setLoading(false);
             })
-    },[id, CourseContent, navigate, SnackbarStore]);
+    },[id, CourseContent, navigate, SnackbarStore, tab]);
 
     const handleChange=(event, value)=>{
-        setTabValue(value);
+        navigate(`/course/${id}/${value}`, { replace: true });
     }
+
     if(loading){
         return <Loading open={loading}/>
     }
 
     return (
-        <>
+        <Box>
             <NavBar/>
             <TabContext value={tabValue}  >
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', display:"flex", justifyContent:"center", marginTop: "10px"}}>
                     <TabList onChange={handleChange} aria-label="lab API tabs example">
-                        <Tab label="Feed" value={1} />
-                        <Tab label="Assignments" value={2} />
-                        <Tab label="Members" value={3}/>
+                        <Tab label="Feed" value={"feed"} />
+                        <Tab label="Assignments" value={"assignments"} />
+                        <Tab label="Members" value={"members"} />
                     </TabList>
                 </Box>
-                <TabPanel value={1}><CourseFeed setLoading={setLoading}/></TabPanel>
-                <TabPanel value={2}><AssignmentsList/></TabPanel>
-                <TabPanel value={3}><MembersList/></TabPanel>
+                <TabPanel value={"feed"}><CourseFeed/></TabPanel>
+                <TabPanel value={"assignments"} sx={{ p: "5px" }}><AssignmentsList/></TabPanel>
+                <TabPanel value={"members"}><MembersList/></TabPanel>
             </TabContext>
-        </>
+        </Box>
     );
 };
 
-export default CoursePage;
+export default observer(CoursePage);

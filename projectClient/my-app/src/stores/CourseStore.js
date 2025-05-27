@@ -9,15 +9,12 @@ export class CourseStore{
     get courses() {
         return this._courses;
     };
-
     set courses(value) {
         this._courses = value;
     };
-
     get pages() {
         return this._pages;
     }
-
     set pages(value) {
         this._pages = value;
     }

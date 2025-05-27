@@ -39,7 +39,10 @@ const WorkspacePage = () => {
             <NavBar />
             {
                 Courses.courses.length === 0 ?
-                    <Typography variant="h5">There are no courses</Typography> :
+                    <Box sx={{display: "flex", justifyContent: "center", marginTop: "10px"}}>
+                        <Typography variant="h5">Your courses will be displayed here</Typography>
+                    </Box>
+                     :
                     <Box component={"div"} className={"course-container"} >
                         {
                             Courses.courses.map((course) => {

@@ -11,7 +11,7 @@ const JoinCoursePage = () => {
     useEffect(() => {
         joinCourseWithCode(code).then(r=>{
             localStorage.removeItem("code");
-            navigate(COURSE_PAGE_ROUTE.replace(":id",r.id), {replace:true});
+            navigate(COURSE_PAGE_ROUTE.replace(":id",r.id).replace(":tab", "feed"), {replace:true});
         })
             .catch((error)=>{
                 if(error.status === 401){

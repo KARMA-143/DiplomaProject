@@ -24,3 +24,8 @@ export const sendNewActivationLink=async()=>{
     const {data}=await $authHost.get('/user/resend');
     return data;
 }
+
+export const fetchUserWithEmail=async(pattern, id)=>{
+    const {data}=await $authHost.get(`/user/${id}/${pattern}`);
+    return data;
+}

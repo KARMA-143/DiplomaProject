@@ -1,0 +1,12 @@
+.assignment-box{
+    border: 1px solid grey;
+    border-radius: 5px;
+    padding: 5px;
+    box-shadow: #292828 1px 1px 1px;
+}
+
+.assignment-box:hover{
+    border: 1px solid blue;
+    background-color: #fafafa;
+    color: blue;
+}

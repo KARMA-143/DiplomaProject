@@ -39,7 +39,7 @@ const ChooseCoverDialog = ({open, setOpen, cover, setCover}) => {
                 },
             }}
         >
-            <DialogTitle>Choose course cover</DialogTitle>
+            <DialogTitle sx={{display:"flex", justifyContent:"center"}}>Choose course cover</DialogTitle>
             <DialogContent>
                 <ImageList sx={{ width: 680, height: 580 }} cols={3} rowHeight={164}>
                     {Covers.covers.map((item) => (

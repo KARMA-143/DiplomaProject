@@ -1,44 +1,53 @@
-import React from 'react';
-import {Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText} from "@mui/material";
-import HomeFilledIcon from '@mui/icons-material/HomeFilled';
+import React, {useContext} from 'react';
+import {Box, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Badge} from "@mui/material";
 import CardMembershipIcon from '@mui/icons-material/CardMembership';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import EventNoteIcon from '@mui/icons-material/EventNote';
+import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import {Context} from "../index";
+import {useNavigate} from "react-router-dom";
+import {INVITATION_ROUTE, MAIN_ROUTE} from "../utils/consts";
+import {observer} from "mobx-react-lite";
 
 const DrawerList = ({setOpen}) => {
+    const {User} = useContext(Context);
+    const navigate = useNavigate();
+
     return (
         <Box sx={{ width: 250 }} role="presentation" onClick={setOpen}>
             <List>
-                <ListItem key={"Home"} disablePadding>
-                    <ListItemButton>
-                        <ListItemIcon>
-                            <HomeFilledIcon/>
-                        </ListItemIcon>
-                        <ListItemText primary={"Home"}/>
-                    </ListItemButton>
-                </ListItem>
-                <ListItem key={"Courses"} disablePadding>
+                <ListItem disablePadding onClick={()=>{navigate(MAIN_ROUTE)}}>
                     <ListItemButton>
                         <ListItemIcon>
                             <CardMembershipIcon/>
                         </ListItemIcon>
-                        <ListItemText primary={"Courses"}/>
+                        <ListItemText primary="Courses"/>
                     </ListItemButton>
                 </ListItem>
-                <ListItem key={"Tasks"} disablePadding>
+                <ListItem disablePadding>
                     <ListItemButton>
                         <ListItemIcon>
                             <AssignmentIcon/>
                         </ListItemIcon>
-                        <ListItemText primary={"Tasks"}/>
+                        <ListItemText primary="Tasks"/>
                     </ListItemButton>
                 </ListItem>
-                <ListItem key={"Task schedule"} disablePadding>
+                <ListItem disablePadding>
                     <ListItemButton>
                         <ListItemIcon>
                             <EventNoteIcon/>
                         </ListItemIcon>
-                        <ListItemText primary={"Task schedule"}/>
+                        <ListItemText primary="Task schedule"/>
+                    </ListItemButton>
+                </ListItem>
+                <ListItem disablePadding onClick={()=>{navigate(INVITATION_ROUTE)}}>
+                    <ListItemButton>
+                        <ListItemIcon>
+                            <Badge badgeContent={User.invitationCount} color="error">
+                                <MailOutlineIcon />
+                            </Badge>
+                        </ListItemIcon>
+                        <ListItemText primary="Invitations"/>
                     </ListItemButton>
                 </ListItem>
             </List>
@@ -46,4 +55,4 @@ const DrawerList = ({setOpen}) => {
     );
 };
 
-export default DrawerList;
+export default observer(DrawerList);

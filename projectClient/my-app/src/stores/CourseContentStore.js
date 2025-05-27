@@ -6,6 +6,7 @@ export class CourseContentStore {
         this._members=[];
         this._posts=[];
         this._tasks=[];
+        this._invitations=[];
         makeAutoObservable(this);
     }
 
@@ -41,10 +42,11 @@ export class CourseContentStore {
         this._tasks = value;
     }
 
-    setCourseContent(courseContent) {
-        this._course=courseContent.course;
-        this._posts=courseContent.posts;
-        this._tasks=courseContent.tasks;
-        this._members=courseContent.members;
+    get invitations() {
+        return this._invitations;
+    }
+
+    set invitations(value) {
+        this._invitations = value;
     }
 }

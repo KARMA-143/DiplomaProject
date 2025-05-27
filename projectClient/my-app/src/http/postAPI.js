@@ -1,5 +1,10 @@
 import {$authHost} from "./index";
 
+export const getCoursePosts=async(courseId)=>{
+    const {data} = await $authHost.get(`/post/${courseId}`);
+    return data;
+}
+
 export const createCoursePost = async (courseId, formData)=>{
     const {data}=await $authHost.post(`/post/${courseId}`, formData);
     return data;

@@ -23,6 +23,7 @@ import JoinCourseDialog from "./JoinCourseDialog";
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import Loading from "./Loading";
+import {observer} from "mobx-react-lite";
 
 const NavBar = () => {
     const [anchorEl, setAnchorEl] = useState(null);
@@ -82,7 +83,7 @@ const NavBar = () => {
                         >
                             <ListRoundedIcon/>
                         </IconButton>
-                        <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                        <Typography onClick={()=>{navigate(MAIN_ROUTE)}} variant="h6" component="div" sx={{ flexGrow: 1 }}>
                             Workspace
                         </Typography>
                         {
@@ -128,4 +129,4 @@ const NavBar = () => {
     );
 };
 
-export default NavBar;
+export default observer(NavBar);

@@ -9,14 +9,14 @@ class TokenService {
         return {accessToken, refreshToken};
     }
 
-    async saveToken(userId, refreshToken){
+    async saveToken(userId, refreshToken, transaction){
         const token=await RefreshToken.findOne({where:{UserId:userId}});
         if(token){
             token.refreshToken = refreshToken;
-            await token.save();
+            await token.save({transaction});
             return token;
         }
-        return await RefreshToken.create({refreshToken: refreshToken, UserId: userId});
+        return await RefreshToken.create({refreshToken: refreshToken, UserId: userId},{transaction});
     }
 
     validateAccessToken(token){
@@ -41,8 +41,8 @@ class TokenService {
         return await RefreshToken.findOne({where:{refreshToken:token}});
     }
 
-    async deleteRefreshToken(userId){
-        await RefreshToken.destroy({where:{UserId:userId}});
+    async deleteRefreshToken(userId, transaction){
+        await RefreshToken.destroy({where:{UserId:userId}, transaction});
     }
 }
 

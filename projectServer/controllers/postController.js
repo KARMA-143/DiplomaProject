@@ -7,6 +7,7 @@ class PostController {
             const courseId = req.params.id;
             const post = req.body;
             const files = req.files?.files;
+
             const newPost = await postService.createPost(courseId, post, user.id, files);
             return res.status(200).json(newPost);
         }
@@ -33,6 +34,17 @@ class PostController {
             const files = req.files?.files;
             const updatedPost = await postService.editPost(postId, post, files);
             return res.status(200).json(updatedPost);
+        }
+        catch(err){
+            next(err);
+        }
+    }
+
+    async getCoursePosts(req,res, next){
+        try{
+            const courseId= req.params.id;
+            const posts = await postService.getCoursePosts(courseId);
+            return res.status(200).json(posts);
         }
         catch(err){
             next(err);

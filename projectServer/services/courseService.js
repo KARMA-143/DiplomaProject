@@ -3,36 +3,41 @@ const {Op} = require("sequelize");
 const CourseCardDTO = require("../DTO/CourseCardDTO");
 const uuid=require('uuid')
 const APIError = require("../exceptions/APIError");
-const taskService = require("../services/taskService");
-const postService = require("../services/postService");
 const CourseInfoDTO = require("../DTO/CourseInfoDTO");
+const sequelize = require('../db');
+const CourseUserDTO = require("../DTO/CourseUserDTO");
 
 class courseService{
     async getUsersAllCourses(UserId, page){
-        const courses= await Course.findAll({
+        const courses = await Course.findAll({
             subQuery: false,
-            where: {
-                [Op.or]: [
-                    { creatorId: UserId },
-                    { '$Users.id$': UserId }
-                ]
-            },
-            order:[["id", "ASC"]],
-            offset: (page-1)*15,
-            limit:15,
+            distinct: true,
+            order: [["id", "ASC"]],
+            offset: (page - 1) * 15,
+            limit: 15,
             include: [
                 {
                     model: User,
                     as: "creator",
-                    attributes: ["id", "name", "email"],
+                    attributes: ["id", "name", "email"]
                 },
                 {
                     model: User,
+                    attributes: [],
                     through: { attributes: [] },
-                },
+                    where: { id: UserId },
+                    required: false
+                }
             ],
+            where: {
+                [Op.or]: [
+                    { creatorId: UserId },
+                    sequelize.where(sequelize.col("Users.id"), UserId)
+                ]
+            }
         });
         const count=await Course.count({
+            distinct: true,
             where: {
                 [Op.or]: [
                     { creatorId: UserId },
@@ -54,67 +59,120 @@ class courseService{
     }
 
     async createCourse(course, userId){
-        const code =uuid.v4().slice(12);
-        return await Course.create({name: course.name, cover: course.cover, creatorId: userId, code: code});
+        const t = await sequelize.transaction();
+        try{
+            const code =uuid.v4().slice(0,12);
+            const newCourse = await Course.create({name: course.name, cover: course.cover, creatorId: userId, code: code}, {transaction: t});
+            await t.commit();
+            return newCourse;
+        }
+        catch (err){
+            await t.rollback();
+            throw err;
+        }
     }
 
     async addCourseUser(userId, code){
-        const candidate=await Course.findOne({where:{code:code, creatorId: userId}});
-        if(candidate){
-            return {CourseId:candidate.id};
+        const t = await sequelize.transaction();
+        try{
+            const candidate=await Course.findOne({where:{code:code, creatorId: userId}});
+            if(candidate){
+                return {CourseId:candidate.id};
+            }
+            const course= await Course.findOne({where:{code:code}});
+            if(!course){
+                throw APIError.BadRequestError(`Course with code ${code} not found!`);
+            }
+            const courseUser= await CourseUsers.findOne({where:{UserId: userId, CourseId: course.id}});
+            if(courseUser){
+                return courseUser;
+            }
+            const newCourseUser = await CourseUsers.create({UserId: userId, CourseId: course.id}, {transaction: t});
+            await t.commit();
+            return newCourseUser;
         }
-        const course= await Course.findOne({where:{code:code}});
-        if(!course){
-            throw APIError.BadRequestError(`Course with code ${userId} not found!`);
+        catch(err){
+            await t.rollback();
+            throw err;
         }
-        const courseUser= await CourseUsers.findOne({where:{UserId: userId, CourseId: course.id}});
-        if(courseUser){
-            return courseUser;
-        }
-        return await CourseUsers.create({UserId: userId, CourseId: course.id});
     }
 
-    async getCourseInfo(courseId, userId){
+    async getCourseInfo(courseId){
         const course = await Course.findOne({where:{id:courseId}, include:[{model:User, as: "creator", attributes:["id", "email", "name"]}]});
-        const courseUsers = await CourseUsers.findAll({
-            where:{
-                CourseId:course.id
-            },
-            include:[
-                {
-                    model: User,
-                    attributes: ["id", "name", "email"],
-                }
-            ]
-        });
-        const posts=await postService.getCoursePosts(courseId);
-        const tasks=await taskService.getCourseTasks(courseId);
-        return new CourseInfoDTO({
-          course:course,
-          members:courseUsers,
-          posts:posts,
-          tasks:tasks
-        });
+        return new CourseInfoDTO(course);
     }
 
     async checkCourseUser(courseId, userId){
         const course= await Course.findOne({where:{id:courseId}});
         if(!course){
-            throw APIError.BadRequestError(`Course with code ${userId} not found!`);
+            throw APIError.BadRequestError(`Course with code ${courseId} not found!`);
         }
         const candidate=await Course.findOne({where:{id:courseId, creatorId: userId}});
         if(candidate){
-            return {isCreator: true};
+            return "creator";
         }
         const courseUser= await CourseUsers.findOne({where:{UserId: userId, CourseId: courseId}});
         if(courseUser){
-            return {isCreator: false};
+            return courseUser.isMentor? "mentor":"member";
         }
         throw APIError.BadRequestError("User is not a member of this course!");
     }
 
     async getCourseFile(fileId){
         return await File.findOne({where: {id: fileId}});
+    }
+
+    async getCourseUsers(id){
+        const courseWithUsers = await CourseUsers.findAll({
+            where: { CourseId: id },
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'name', 'email']
+                }
+            ]
+        });
+        return courseWithUsers.map(user=>{
+            return new CourseUserDTO(user);
+        })
+    }
+
+    async deleteCourseUser(userId){
+        const t = await sequelize.transaction();
+        try{
+            await CourseUsers.destroy({where:{id:userId}, transaction: t});
+            await t.commit();
+        }
+        catch (err){
+            await t.rollback();
+            throw err;
+        }
+    }
+
+    async updateCourseUser(userId, role, courseId){
+        const t = await sequelize.transaction();
+        try{
+            if(role==="owner"){
+                const courseCreator = await Course.findOne({where:{id: courseId}});
+                const courseUser = await CourseUsers.findOne({where:{id:userId}});
+                await Course.update({creatorId: courseUser.UserId},{where:{id: courseId}, transaction: t});
+                await CourseUsers.update({UserId: courseCreator.creatorId, isMentor: true}, {where:{id: userId}, transaction: t});
+            }
+            else{
+                await CourseUsers.update({isMentor: role === "mentor"},{where:{id: userId}, transaction: t})
+            }
+            await t.commit();
+        }
+        catch (err){
+            await t.rollback();
+            throw err;
+        }
+    }
+
+    async getCourseUsersIds(courseId){
+        const courseUsers = await CourseUsers.findAll({where:{CourseId: courseId}});
+        const courseOwner = await Course.findOne({where:{id: courseId}});
+        return [...courseUsers.map(user=>{return user.UserId}), courseOwner.creatorId];
     }
 }
 

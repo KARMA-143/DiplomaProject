@@ -1,5 +1,7 @@
-const { DataTypes } = require("sequelize");
+const { DataTypes, JSON} = require("sequelize");
 const sequelize = require("../db");
+const mongoose = require("mongoose");
+const {model} = require("mongoose");
 
 const User = sequelize.define("User", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -28,24 +30,35 @@ const Course = sequelize.define("Course", {
 
 const CourseUsers = sequelize.define("CourseUsers", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-
+    isMentor: { type: DataTypes.BOOLEAN, defaultValue: false },
 });
 
 const Post = sequelize.define("Post", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    text: { type: DataTypes.STRING, allowNull: false },
+    text: { type: DataTypes.TEXT, allowNull: false },
 });
 
 const Task = sequelize.define("Task", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    name: { type: DataTypes.STRING, allowNull: false },
+    title: { type: DataTypes.STRING, allowNull: false },
     text: { type: DataTypes.STRING, allowNull: false },
+    openDate:{type: DataTypes.DATE, allowNull: false},
+    dueDate: { type: DataTypes.DATE, allowNull: false },
+});
+
+const Test = sequelize.define("Test",{
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    title: { type: DataTypes.STRING, allowNull: false},
+    questions: {type: DataTypes.JSON, allowNull: false},
+    openDate:{type: DataTypes.DATE, allowNull: false},
     dueDate: { type: DataTypes.DATE, allowNull: false },
 });
 
 const UserTask = sequelize.define("UserTask", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    isMentor: {type: DataTypes.BOOLEAN, defaultValue: false},
+    isAccepted: { type: DataTypes.BOOLEAN, defaultValue: false },
+    extendedDueDate: { type: DataTypes.DATE, allowNull: true },
+    mark: {type: DataTypes.INTEGER, allowNull: true, validate: {min: 1, max: 10}}
 });
 
 const File = sequelize.define("File", {
@@ -58,7 +71,7 @@ const File = sequelize.define("File", {
 
 const Comment = sequelize.define("Comment", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    text: { type: DataTypes.STRING, allowNull: false },
+    text: { type: DataTypes.TEXT, allowNull: false },
     entityId: { type: DataTypes.INTEGER, allowNull: false },
     entityType: { type: DataTypes.ENUM("Post", "UserTask"), allowNull: false },
 });
@@ -75,6 +88,11 @@ const Message = sequelize.define("Message", {
 const ChatUsers = sequelize.define("ChatUsers", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
 });
+
+const Invitation = sequelize.define("Invitation", {
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    isMentor: { type: DataTypes.BOOLEAN, defaultValue: false },
+})
 
 User.hasOne(ActivationLink);
 ActivationLink.belongsTo(User);
@@ -106,10 +124,18 @@ Post.belongsTo(User, {foreignKey: "UserId"});
 Course.hasMany(Task, { onDelete: "CASCADE" });
 Task.belongsTo(Course);
 
+Course.hasMany(Test, { onDelete: "CASCADE" });
+Test.belongsTo(Course);
+
 User.belongsToMany(Task, { through: UserTask, onDelete: "CASCADE" });
 Task.belongsToMany(User, { through: UserTask, onDelete: "CASCADE" });
 
 Comment.belongsTo(User, { as: "author" });
+
+User.hasMany(Invitation, { foreignKey: "userId", onDelete: "CASCADE" });
+Course.hasMany(Invitation, { foreignKey: "courseId", onDelete: "CASCADE" });
+Invitation.belongsTo(User, { as: "user", foreignKey: "userId" });
+Invitation.belongsTo(Course, { as: "course", foreignKey: "courseId" });
 
 module.exports = {
     User,
@@ -125,4 +151,6 @@ module.exports = {
     Chat,
     Message,
     ChatUsers,
+    Invitation,
+    Test
 };

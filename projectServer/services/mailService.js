@@ -16,15 +16,15 @@ class MailService {
         })
     }
 
-    async createActivationLink(userId){
+    async createActivationLink(userId, transaction){
         const activationLink=await ActivationLink.findOne({where:{UserId:userId}});
         if(activationLink){
             activationLink.link=uuid.v4();
-            await activationLink.save();
+            await activationLink.save({transaction});
             return activationLink;
         }
         const newActivationLink=uuid.v4();
-        return await ActivationLink.create({UserId:userId, link:newActivationLink});
+        return await ActivationLink.create({UserId:userId, link:newActivationLink}, {transaction});
     };
 
     async sendActivationLink(to, link){
@@ -45,11 +45,11 @@ class MailService {
         });
     };
 
-    async activate(link){
+    async activate(link, transaction){
         const activationLink=await ActivationLink.findOne({where:{link:link}});
         if(activationLink){
             const userId=activationLink.UserId;
-            await activationLink.destroy();
+            await activationLink.destroy({transaction});
             return userId;
         }
         throw new Error(`Activation link expired or account was activated!`);

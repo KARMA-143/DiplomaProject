@@ -87,6 +87,18 @@ class UserController {
             next(err);
         }
     }
+
+    async findUsersWithPattern(req, res, next){
+        try{
+            const pattern=req.params.pattern;
+            const id = req.params.id;
+            const users = await userService.findUsersWithPattern(pattern, id);
+            return res.status(200).send(users);
+        }
+        catch(err){
+            next(err);
+        }
+    }
 }
 
 module.exports = new UserController();

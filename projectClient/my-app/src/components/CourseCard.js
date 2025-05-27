@@ -8,7 +8,7 @@ const CourseCard = ({course}) => {
     const navigate = useNavigate();
 
     const onCardClick=()=>{
-        navigate(COURSE_PAGE_ROUTE.replace(":id", course.id));
+        navigate(COURSE_PAGE_ROUTE.replace(":id", course.id).replace(":tab", "feed"));
     }
 
     return (
@@ -16,7 +16,7 @@ const CourseCard = ({course}) => {
             <CardActionArea>
                 <CardMedia
                     component="img"
-                    height="140"
+                    sx={{height:"140px", margin:"0px"}}
                     image={course.cover}
                 />
                 <CardContent>

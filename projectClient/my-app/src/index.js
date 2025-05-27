@@ -8,6 +8,9 @@ import {CourseStore} from "./stores/CourseStore";
 import {CoverStore} from "./stores/CoverStore";
 import {CourseContentStore} from "./stores/CourseContentStore";
 import {SnackbarStore} from "./stores/SnackbarStore";
+import {InvitationStore} from "./stores/InvitationStore";
+import {TaskStore} from "./stores/TaskStore";
+import {TestStore} from "./stores/TestStore";
 export const Context = createContext(null);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -18,9 +21,12 @@ root.render(
       Covers: new CoverStore(),
       CourseContent: new CourseContentStore(),
       SnackbarStore: new SnackbarStore(),
+      Invitations: new InvitationStore(),
+      Task: new TaskStore(),
+      Test: new TestStore(),
   }}>
       <BrowserRouter>
-          <App />
+          <App/>
       </BrowserRouter>
   </Context.Provider>
 );

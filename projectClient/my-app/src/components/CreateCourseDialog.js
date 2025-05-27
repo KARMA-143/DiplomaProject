@@ -34,7 +34,7 @@ const CreateCourseDialog = ({open, setOpen}) => {
     const sendRequest=()=>{
         setLoading(true);
         createCourse({name, cover}).then(r=>{
-            navigate(COURSE_PAGE_ROUTE.replace(":id",r.id));
+            navigate(COURSE_PAGE_ROUTE.replace(":id",r.id).replace(":tab", "feed"));
             handleClose();
         })
             .catch((error)=>{
@@ -51,9 +51,9 @@ const CreateCourseDialog = ({open, setOpen}) => {
             onClose={handleClose}
         >
             <Loading open={loading}/>
-            <DialogTitle>Create new course</DialogTitle>
+            <DialogTitle sx={{display:"flex", justifyContent:"center"}}>Create new course</DialogTitle>
             <DialogContent>
-                <DialogContentText>
+                <DialogContentText sx={{display:"flex", justifyContent:"center"}}>
                     Fill the fields
                 </DialogContentText>
                 <TextField

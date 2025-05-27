@@ -41,7 +41,9 @@ class CourseController {
     async getCourseInfo(req,res,next){
         try{
             const id = req.params.id;
+            const role =req.role;
             const courseInfo = await courseService.getCourseInfo(id);
+            courseInfo["role"]=role;
             return res.status(200).json(courseInfo);
         }
         catch(err){
@@ -58,6 +60,51 @@ class CourseController {
                     next(err);
                 }
             });
+        }
+        catch(err){
+            next(err);
+        }
+    }
+
+    async getCourseUsers(req,res,next){
+        try{
+            const id = req.params.id;
+            const members = await courseService.getCourseUsers(id);
+            return res.status(200).json(members);
+        }
+        catch(err){
+            next(err);
+        }
+    }
+
+    async deleteCourseUser(req, res, next){
+        try{
+            const userId = req.params.userId;
+            await courseService.deleteCourseUser(userId);
+            return res.status(200).send();
+        }
+        catch (err){
+            next(err);
+        }
+    }
+
+    async updateCourseUser(req, res, next){
+        try{
+            const userId = req.params.userId;
+            const {role} = req.body;
+            const id = req.params.id;
+            await courseService.updateCourseUser(userId, role, id);
+            return res.status(200).send();
+        }
+        catch(err){
+            next(err);
+        }
+    }
+
+    async getUserRole(req,res,next){
+        try{
+            const role = req.role;
+            return res.status(200).json({role: role});
         }
         catch(err){
             next(err);

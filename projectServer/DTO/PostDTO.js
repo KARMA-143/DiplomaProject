@@ -1,3 +1,6 @@
+const CommentDTO = require("./CommentDTO");
+const FileDTO = require("./FileDTO");
+
 class PostDTO {
     constructor(post){
         this.id= post.id;
@@ -7,25 +10,13 @@ class PostDTO {
         this.user= {
             id: post.User.id,
             name: post.User.name,
+            email: post.User.email,
         };
         this.comments= post.comments.map((comment)=>{
-            return {
-                id: comment.id,
-                text: comment.text,
-                createdAt: comment.createdAt,
-                updatedAt: comment.updatedAt,
-                author: {
-                    id: comment.author.id,
-                    name: comment.author.name,
-                }
-            }
+            return new CommentDTO(comment);
         });
         this.files= post.files.map((file)=>{
-            return {
-                id: file.id,
-                name: file.name,
-                size: file.size,
-            }
+            return new FileDTO(file);
         })
     }
 }
