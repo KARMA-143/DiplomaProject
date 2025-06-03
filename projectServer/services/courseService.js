@@ -8,54 +8,83 @@ const sequelize = require('../db');
 const CourseUserDTO = require("../DTO/CourseUserDTO");
 
 class courseService{
-    async getUsersAllCourses(UserId, page){
+    async getUsersAllCourses(UserId, page = 1, searchQuery = '', role = 'all') {
+        const whereConditions = [];
+
+        if (searchQuery) {
+            whereConditions.push({
+                name: {
+                    [Op.iLike]: `%${searchQuery}%`
+                }
+            });
+        }
+
+        let roleCondition;
+
+        if (role === 'mentor') {
+            roleCondition = {
+                [Op.or]: [
+                    { creatorId: UserId },
+                    {
+                        '$users.CourseUsers.isMentor$': true,
+                        '$users.id$': UserId
+                    }
+                ]
+            };
+        } else if (role === 'member') {
+            roleCondition = {
+                creatorId: { [Op.ne]: UserId },
+                '$users.CourseUsers.isMentor$': false,
+                '$users.id$': UserId
+            };
+        } else {
+            roleCondition = {
+                [Op.or]: [
+                    { creatorId: UserId },
+                    sequelize.where(sequelize.col("users.id"), UserId)
+                ]
+            };
+        }
+
+        const whereClause = {
+            [Op.and]: [
+                ...whereConditions,
+                roleCondition
+            ]
+        };
+
+        const includeUsers = {
+            model: User,
+            as: "users",
+            attributes: [],
+            through: { attributes: ["isMentor"] },
+            where: role !== 'all' ? { id: UserId } : undefined,
+            required: false
+        };
+
+        const includeCreator = {
+            model: User,
+            as: "creator",
+            attributes: ["id", "name", "email"]
+        };
+
         const courses = await Course.findAll({
             subQuery: false,
             distinct: true,
             order: [["id", "ASC"]],
             offset: (page - 1) * 15,
             limit: 15,
-            include: [
-                {
-                    model: User,
-                    as: "creator",
-                    attributes: ["id", "name", "email"]
-                },
-                {
-                    model: User,
-                    attributes: [],
-                    through: { attributes: [] },
-                    where: { id: UserId },
-                    required: false
-                }
-            ],
-            where: {
-                [Op.or]: [
-                    { creatorId: UserId },
-                    sequelize.where(sequelize.col("Users.id"), UserId)
-                ]
-            }
+            include: [includeCreator, includeUsers],
+            where: whereClause
         });
-        const count=await Course.count({
+
+        const count = await Course.count({
             distinct: true,
-            where: {
-                [Op.or]: [
-                    { creatorId: UserId },
-                    { '$Users.id$': UserId }
-                ]
-            },
-            include: [
-                {
-                    model: User,
-                    as: "creator",
-                    attributes: ["id", "name", "email"],
-                },
-                {
-                    model: User,
-                    through: { attributes: [] },
-                },
-            ],});
-        return new CourseCardDTO({courses, count});
+            include: [includeCreator, includeUsers],
+            where: whereClause
+        });
+
+        return new CourseCardDTO({ courses, count });
     }
 
     async createCourse(course, userId){
@@ -182,6 +211,31 @@ class courseService{
                     attributes: ['email']
                 }
             ]});
+    }
+
+    async deleteCourse(id){
+        const t = await sequelize.transaction();
+        try{
+            await Course.destroy({where:{id:id}, transaction:t})
+            await t.commit();
+        }
+        catch (err){
+            await t.rollback();
+            throw err;
+        }
+    }
+
+    async updateCourse(id, data){
+        const t = await sequelize.transaction();
+        try{
+            await Course.update({name:data.name, cover:data.cover},{where:{id:id}, transaction:t});
+            await t.commit();
+            return await this.getCourseInfo(id)
+        }
+        catch (err){
+            await t.rollback();
+            throw err;
+        }
     }
 }
 

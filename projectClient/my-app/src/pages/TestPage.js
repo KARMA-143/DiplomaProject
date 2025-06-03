@@ -59,7 +59,6 @@ const TestPage = () => {
     useEffect(() => {
         getTest(id, testId).then(res=>{
             Test.setTest(res);
-            console.log(res);
             if(Test.role==="member"){
                 checkAttempt(id, testId).then(res=>{
                     if(res?.status){
@@ -83,7 +82,6 @@ const TestPage = () => {
             else{
                 getCompleteTest(id, testId).then(res=>{
                     setCompleteTests(res);
-                    console.log(res);
                 })
                     .catch(err=>{
                         SnackbarStore.show(err.response.data.message, "error");
@@ -309,7 +307,7 @@ const TestPage = () => {
                                     label="Test Title"
                                 />
                                 <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
                                         <DateTimePicker
                                             label="Open Time"
                                             ampm={false}
@@ -359,7 +357,7 @@ const TestPage = () => {
                                                 else setTimeLimit('');
                                             }}
                                             inputProps={{ min: 1 }}
-                                            helperText={timeLimitError? "time can't be undefined!" : "Specify the duration allowed to complete the test"}
+                                            helperText={timeLimitError&& "time can't be undefined!"}
                                             variant="outlined"
                                         />
                                     </Stack>
@@ -395,7 +393,10 @@ const TestPage = () => {
                                             <QuestionList questions={questions} isEdit={true} setQuestions={setQuestions} questionRefs={questionRefs}/>
                                         }
                                     </Box>
-                                    <Box>
+                                    <Box sx={{
+                                        maxHeight: '80vh',
+                                        overflowY: "auto",
+                                    }}>
                                         <Tooltip title={"Add question"}>
                                             <IconButton
                                                 onClick={handleCreateQuestionMenuClick}
@@ -502,7 +503,7 @@ const TestPage = () => {
                                     borderRadius: 4,
                                     display: "flex",
                                     flexDirection: "column",
-                                    maxHeight:"85vh",
+                                    maxHeight:"90vh",
                                     overflowY:"auto"
                                 }}
                             >
@@ -568,7 +569,7 @@ const TestPage = () => {
                                                     borderLeft: "1px solid #eee",
                                                     pl: 1,
                                                     overflowY: "auto",
-                                                    maxHeight: "100%",
+                                                    maxHeight: "65vh",
                                                 }}
                                             >
                                                 <Stack spacing={1}>

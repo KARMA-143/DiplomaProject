@@ -1,65 +1,98 @@
-import React, {useContext, useEffect, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import NavBar from "../components/NavBar";
 import { observer } from "mobx-react-lite";
-import { Context } from "../index";
-import CourseCard from "../components/CourseCard";
-import {Typography, Pagination, Box} from "@mui/material";
+import {
+    Typography,
+    Box,
+    TextField,
+    RadioGroup,
+    FormControlLabel,
+    Radio,
+    Paper,
+    MenuItem,
+    Select,
+    InputLabel, FormControl
+} from "@mui/material";
 import "../styles/WorkspacePage.css";
-import {getUsersAllCourse} from "../http/courseAPI";
-import Loading from "../components/Loading";
+import CourseList from "../components/CourseList";
 
 const WorkspacePage = () => {
-    const { Courses, SnackbarStore } = useContext(Context);
     const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
 
     useEffect(() => {
-        setLoading(true);
-        getUsersAllCourse(page).then((r)=>{
-            Courses.setData(r);
-        })
-            .catch((error)=>{
-                SnackbarStore.show(error.response.data.message, "error");
-            })
-            .finally(()=>{
-            setLoading(false);
-        })
-    },[Courses, page, SnackbarStore]);
+        const timeout = setTimeout(() => {
+            setSearchQuery(searchInput);
+        }, 1000);
+        return () => clearTimeout(timeout);
+    }, [searchInput]);
 
-    const changePage=(event, value)=>{
-        setPage(value);
-    }
+    const handleSearchChange = (e) => {
+        setSearchInput(e.target.value);
+        setPage(1);
+    };
 
-    if(loading){
-        return <Loading open={loading}/>
-    }
+    const handleRoleChange = (e) => {
+        setRoleFilter(e.target.value);
+        setPage(1);
+    };
 
     return (
         <>
-            <NavBar TitleComponent={<Typography variant={"h6"} content={"div"}>Workspace</Typography>}/>
-            {
-                Courses.courses.length === 0 ?
-                    <Box sx={{display: "flex", justifyContent: "center", marginTop: "10px"}}>
-                        <Typography variant="h5">Your courses will be displayed here</Typography>
-                    </Box>
-                     :
-                    <Box component={"div"} className={"course-container"} >
-                        {
-                            Courses.courses.map((course) => {
-                                return (
-                                    <CourseCard key={course.id} course={course} />
-                                );
-                            })
-                        }
-                    </Box>
-            }
-            {Courses.pages>1 ?
-                <div className={"course-pages"}>
-                    <Pagination count={Courses.pages} color="primary" page={page} onChange={changePage}/>
-                </div>
-                :
-                <></>
-            }
+            <NavBar TitleComponent={<Typography variant="h6" component="div">Workspace</Typography>} />
+
+            <Paper
+                elevation={3}
+                sx={{
+                    mt: 3,
+                    mx: 'auto',
+                    px: 3,
+                    py: 2,
+                    maxWidth: '900px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 2,
+                    borderRadius: 3
+                }}
+            >
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'row',
+                        gap: 2,
+                        justifyContent: 'center',
+                        width: '100%'
+                    }}
+                >
+                    <TextField
+                        fullWidth
+                        label="Search by course name"
+                        variant="outlined"
+                        size="small"
+                        value={searchInput}
+                        onChange={handleSearchChange}
+                    />
+
+                    <FormControl size="small" sx={{ minWidth: 160 }}>
+                        <InputLabel>Role</InputLabel>
+                        <Select
+                            value={roleFilter}
+                            label="Role"
+                            onChange={handleRoleChange}
+                            sx={{ borderRadius: 2 }}
+                        >
+                            <MenuItem value="all">All</MenuItem>
+                            <MenuItem value="member">Member</MenuItem>
+                            <MenuItem value="mentor">Mentor</MenuItem>
+                        </Select>
+                    </FormControl>
+                </Box>
+            </Paper>
+
+            <CourseList searchQuery={searchQuery} roleFilter={roleFilter} page={page} setPage={setPage} />
         </>
     );
 };

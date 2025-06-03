@@ -8,6 +8,8 @@ courseRouter.get("/", authMiddleware, courseController.getUserCourses);
 courseRouter.post("/", authMiddleware, courseController.createCourse);
 courseRouter.post("/join", authMiddleware, courseController.joinCourseWithCode);
 courseRouter.get("/:id", authMiddleware, checkCourseUserMiddleware, courseController.getCourseInfo);
+courseRouter.delete("/:id", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, courseController.deleteCourse);
+courseRouter.put("/:id", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, courseController.updateCourse);
 courseRouter.get("/:id/download/:fileId", authMiddleware, checkCourseUserMiddleware, courseController.downloadCourseFile);
 courseRouter.get("/:id/users", authMiddleware, checkCourseUserMiddleware, courseController.getCourseUsers);
 courseRouter.delete("/:id/users/:userId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, courseController.deleteCourseUser);

@@ -5,6 +5,7 @@ class CourseInfoDTO {
         this.cover= courseInfo.cover;
         this.code= courseInfo.code;
         this.creator= courseInfo.creator;
+        this.createdAt = courseInfo.createdAt;
     }
 }
 

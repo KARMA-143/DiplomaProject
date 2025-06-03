@@ -215,7 +215,7 @@ const TestCreatePage = () => {
                             label="Test Title"
                         />
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
+                            <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="flex-start">
                                 <DateTimePicker
                                     label="Open Time"
                                     ampm={false}
@@ -288,7 +288,7 @@ const TestCreatePage = () => {
                         <Box sx={{ display: "flex", justifyContent: "center", alignItems: "flex-start" }}>
                             <Box sx={{
                                 width: "100%",
-                                maxHeight: '50vh',
+                                maxHeight: '60vh',
                                 overflowY: "auto",
                                 display: "flex",
                                 justifyContent: "flex-start"
@@ -302,7 +302,12 @@ const TestCreatePage = () => {
                                     />
                                 )}
                             </Box>
-                            <Box>
+                            <Box
+                                sx={{
+                                    maxHeight: '60vh',
+                                    overflowY: "auto",
+                                }}
+                            >
                                 <Tooltip title={"Add question"}>
                                     <IconButton onClick={handleCreateQuestionMenuClick}>
                                         <AddIcon />

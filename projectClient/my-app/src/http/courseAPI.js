@@ -1,9 +1,15 @@
 import {$authHost} from "./index";
 
-export const getUsersAllCourse=async (page)=>{
-    const {data}=await $authHost.get('/course', {headers:{"page":page||1}});
+export const getUsersAllCourse = async (page, searchQuery = "", role = "all") => {
+    const { data } = await $authHost.get('/course', {
+        params: {
+            page: page || 1,
+            searchQuery,
+            role
+        }
+    });
     return data;
-}
+};
 
 export const createCourse=async (course)=>{
     const {data}=await $authHost.post('/course', course, {headers:{"Content-Type":"application/json"}});
@@ -18,6 +24,16 @@ export const joinCourseWithCode=async(code)=>{
 export const getCourseById=async(id)=>{
     const {data, status}=await $authHost.get('/course/'+id);
     return {data, status};
+}
+
+export const deleteCourseById=async(id)=>{
+    const {data}=await $authHost.delete('/course/'+id);
+    return data;
+}
+
+export const updateCourseById=async(id, course)=>{
+    const {data}=await $authHost.put('/course/'+id, course);
+    return data;
 }
 
 export const downloadCourseFile=async(id, fileId)=>{

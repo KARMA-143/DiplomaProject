@@ -1,4 +1,4 @@
-const { DataTypes, JSON} = require("sequelize");
+const { DataTypes } = require("sequelize");
 const sequelize = require("../db");
 
 const User = sequelize.define("User", {
@@ -40,37 +40,37 @@ const Task = sequelize.define("Task", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     title: { type: DataTypes.STRING, allowNull: false },
     text: { type: DataTypes.TEXT, allowNull: false },
-    openDate:{type: DataTypes.DATE, allowNull: false},
+    openDate: { type: DataTypes.DATE, allowNull: false },
     dueDate: { type: DataTypes.DATE, allowNull: false },
 });
 
-const Test = sequelize.define("Test",{
+const Test = sequelize.define("Test", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    title: { type: DataTypes.STRING, allowNull: false},
-    questions: {type: DataTypes.JSON, allowNull: false},
-    openDate:{type: DataTypes.DATE, allowNull: false},
+    title: { type: DataTypes.STRING, allowNull: false },
+    questions: { type: DataTypes.JSON, allowNull: false },
+    openDate: { type: DataTypes.DATE, allowNull: false },
     dueDate: { type: DataTypes.DATE, allowNull: false },
-    timeLimit:{type:DataTypes.INTEGER}
+    timeLimit: { type: DataTypes.INTEGER }
 });
 
-const TestAttempt = sequelize.define("TestAttempt",{
+const TestAttempt = sequelize.define("TestAttempt", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    startTime:{type:DataTypes.DATE, allowNull:false},
-    answers:{type:DataTypes.JSON}
-})
+    startTime: { type: DataTypes.DATE, allowNull: false },
+    answers: { type: DataTypes.JSON }
+});
 
 const UserTask = sequelize.define("UserTask", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     text: { type: DataTypes.TEXT, allowNull: false },
-    mark: {type: DataTypes.INTEGER, allowNull: true, validate: {min: 1, max: 10}}
+    mark: { type: DataTypes.INTEGER, allowNull: true, validate: { min: 1, max: 10 } }
 });
 
-const CompleteTest = sequelize.define("CompleteTest",{
+const CompleteTest = sequelize.define("CompleteTest", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    answers: {type: DataTypes.JSON},
-    mark: {type: DataTypes.INTEGER, allowNull: true, validate: {min: 1, max: 10}},
-    points:{type:DataTypes.JSON}
-})
+    answers: { type: DataTypes.JSON },
+    mark: { type: DataTypes.INTEGER, allowNull: true, validate: { min: 1, max: 10 } },
+    points: { type: DataTypes.JSON }
+});
 
 const File = sequelize.define("File", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -103,7 +103,7 @@ const ChatUsers = sequelize.define("ChatUsers", {
 const Invitation = sequelize.define("Invitation", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     isMentor: { type: DataTypes.BOOLEAN, defaultValue: false },
-})
+});
 
 User.hasOne(ActivationLink);
 ActivationLink.belongsTo(User);
@@ -125,8 +125,10 @@ User.hasMany(ChatUsers, { foreignKey: 'UserId', onDelete: "CASCADE" });
 Chat.hasMany(ChatUsers, { foreignKey: 'ChatId', onDelete: "CASCADE" });
 
 Course.belongsTo(User, { as: "creator" });
-User.belongsToMany(Course, { through: CourseUsers, onDelete: "CASCADE" });
-Course.belongsToMany(User, { through: CourseUsers, onDelete: "CASCADE" });
+
+User.belongsToMany(Course, { through: CourseUsers, as: "courses", onDelete: "CASCADE" });
+Course.belongsToMany(User, { through: CourseUsers, as: "users", onDelete: "CASCADE" });
+
 CourseUsers.belongsTo(User, { foreignKey: 'UserId' });
 CourseUsers.belongsTo(Course, { foreignKey: 'CourseId' });
 
@@ -134,7 +136,7 @@ Course.hasMany(Post, { onDelete: "CASCADE" });
 Post.belongsTo(Course);
 
 User.hasMany(Post, { onDelete: "CASCADE" });
-Post.belongsTo(User, {foreignKey: "UserId"});
+Post.belongsTo(User, { foreignKey: "UserId" });
 
 Course.hasMany(Task, { onDelete: "CASCADE" });
 Task.belongsTo(Course);
@@ -149,8 +151,8 @@ UserTask.belongsTo(User, { foreignKey: "UserId" });
 
 User.belongsToMany(Test, { through: CompleteTest, onDelete: "CASCADE" });
 Test.belongsToMany(User, { through: CompleteTest, onDelete: "CASCADE" });
-CompleteTest.hasMany(Test, {foreignKey:"TestId"});
-CompleteTest.hasMany(User, {foreignKey:"UserId"});
+CompleteTest.belongsTo(Test, {foreignKey:"TestId"});
+CompleteTest.belongsTo(User, {foreignKey:"UserId"});
 
 User.hasMany(TestAttempt, { foreignKey: 'UserId', onDelete: 'CASCADE' });
 TestAttempt.belongsTo(User, { foreignKey: 'UserId' });

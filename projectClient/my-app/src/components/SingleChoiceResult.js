@@ -21,7 +21,7 @@ const SingleChoiceResult = ({ question, index }) => {
                 {question.options.map((option, idx) => {
                     let bg = "transparent";
 
-                    if (userAnswer === idx && idx !== question.correctAnswer) {
+                    if (+userAnswer === idx && idx !== question.correctAnswer) {
                         bg = "#ffd6d6";
                     }
 

@@ -5,8 +5,8 @@ class CourseController {
     async getUserCourses(req,res, next){
         try{
             const user=req.user;
-            const page = req.headers.page;
-            const courses = await courseService.getUsersAllCourses(user.id, page);
+            const { page, searchQuery, role } = req.query;
+            const courses = await courseService.getUsersAllCourses(user.id, page, searchQuery, role);
             return res.status(200).json(courses);
         }
         catch(err){
@@ -107,6 +107,29 @@ class CourseController {
             return res.status(200).json({role: role});
         }
         catch(err){
+            next(err);
+        }
+    }
+
+    async deleteCourse(req, res, next){
+        try{
+            const id=req.params.id;
+            await courseService.deleteCourse(id);
+            return res.status(200).send();
+        }
+        catch (err){
+            next(err);
+        }
+    }
+
+    async updateCourse(req, res, next){
+        try{
+            const id=req.params.id;
+            const data=req.body;
+            const course = await courseService.updateCourse(id, data);
+            return res.status(200).json(course);
+        }
+        catch (err){
             next(err);
         }
     }

@@ -11,58 +11,68 @@ import CourseAssignments from "../components/CourseAssignments";
 import MembersList from "../components/MembersList";
 import {Context} from "../index";
 import {observer} from "mobx-react-lite";
+import EditCourseComponent from "../components/EditCourseComponent";
 
 const CoursePage = () => {
-    const {id, tab}=useParams();
-    const navigate=useNavigate();
+    const { id, tab } = useParams();
+    const navigate = useNavigate();
     const [tabValue, setTabValue] = React.useState(undefined);
     const [loading, setLoading] = React.useState(true);
-    const {CourseContent, SnackbarStore} = useContext(Context);
+    const { CourseContent, SnackbarStore } = useContext(Context);
 
     useEffect(() => {
-        getCourseById(id).then(r=>{
+        getCourseById(id).then(r => {
             CourseContent.course = r.data;
-            if(!["feed", "assignments", "members"].includes(tab)){
+
+            const tabs = ["feed", "assignments", "members"];
+            if (r.data.role === "creator") tabs.push("edit");
+
+            if (!tabs.includes(tab)) {
                 navigate(`/course/${id}/feed`, { replace: true });
             } else {
                 setTabValue(tab);
             }
         })
-            .catch((err)=>{
-                if(err.status === 400){
-                    navigate(MAIN_ROUTE, {replace: true});
-                }
-                else{
-                    SnackbarStore.show(err.response.data.message, "error");
+            .catch((err) => {
+                if (err.status === 400) {
+                    navigate(MAIN_ROUTE, { replace: true });
+                } else {
+                    SnackbarStore.show(err.response?.data?.message || "Failed to load course", "error");
                 }
             })
-            .finally(()=>{
+            .finally(() => {
                 setLoading(false);
-            })
-    },[id, CourseContent, navigate, SnackbarStore, tab]);
+            });
+    }, [id, CourseContent, navigate, SnackbarStore, tab]);
 
-    const handleChange=(event, value)=>{
+    const handleChange = (event, value) => {
         navigate(`/course/${id}/${value}`, { replace: true });
-    }
+    };
 
-    if(loading){
-        return <Loading open={loading}/>
+    if (loading) {
+        return <Loading open={loading} />;
     }
 
     return (
         <Box>
-            <NavBar TitleComponent={<Typography variant={"h6"} content={"div"}>{CourseContent.course.name}</Typography>}/>
-            <TabContext value={tabValue}  >
-                <Box sx={{ borderBottom: 1, borderColor: 'divider', display:"flex", justifyContent:"center", marginTop: "10px"}}>
-                    <TabList onChange={handleChange} aria-label="lab API tabs example">
-                        <Tab label="Feed" value={"feed"} />
-                        <Tab label="Assignments" value={"assignments"} />
-                        <Tab label="Members" value={"members"} />
+            <NavBar TitleComponent={<Typography variant="h6" component="div">{CourseContent.course.name}</Typography>} />
+            <TabContext value={tabValue}>
+                <Box sx={{ borderBottom: 1, borderColor: 'divider', display: "flex", justifyContent: "center", mt: 2 }}>
+                    <TabList onChange={handleChange} aria-label="course tabs">
+                        <Tab label="Feed" value="feed" />
+                        <Tab label="Assignments" value="assignments" />
+                        <Tab label="Members" value="members" />
+                        {CourseContent.course.role === "creator" && (
+                            <Tab label="Edit Course" value="edit" />
+                        )}
                     </TabList>
                 </Box>
-                <TabPanel value={"feed"}><CourseFeed/></TabPanel>
-                <TabPanel value={"assignments"} sx={{ p: "5px" }}><CourseAssignments/></TabPanel>
-                <TabPanel value={"members"}><MembersList/></TabPanel>
+                <TabPanel value="feed"><CourseFeed /></TabPanel>
+                <TabPanel value="assignments" sx={{ p: "5px" }}><CourseAssignments /></TabPanel>
+                <TabPanel value="members"><MembersList /></TabPanel>
+                {CourseContent.course.role === "creator" && (
+                    <TabPanel value="edit"><EditCourseComponent/></TabPanel>
+                )}
             </TabContext>
         </Box>
     );

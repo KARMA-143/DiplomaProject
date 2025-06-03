@@ -8,6 +8,7 @@ import AddIcon from "@mui/icons-material/Add";
 import Tooltip from "@mui/material/Tooltip";
 import CreateAssignmentDialog from "./CreateAssignmentDialog";
 import AssignmentList from "./AssignmentList";
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 
 const CourseAssignments = () => {
     const {id} = useParams();
@@ -72,16 +73,19 @@ const CourseAssignments = () => {
             ) : (
                 <Box
                     sx={{
-                        mt: 1,
-                        p: 3,
-                        bgcolor: 'background.paper',
-                        borderRadius: 2,
-                        boxShadow: 1,
+                        mt: 8,
+                        px: 2,
+                        py: 4,
                         textAlign: 'center',
                         color: 'text.secondary',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
                     }}
                 >
-                    <Typography variant="body1">There are no assignments yet.</Typography>
+                    <AssignmentTurnedInIcon sx={{ fontSize: 48, mb: 1 }} color="action" />
+                    <Typography variant="h6">There are no assignments yet.</Typography>
+                    <Typography variant="body2">You will see assignments here when they're created.</Typography>
                 </Box>
             )}
 
