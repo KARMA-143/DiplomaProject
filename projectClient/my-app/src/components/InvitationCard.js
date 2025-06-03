@@ -33,7 +33,6 @@ const InvitationCard = ({invitation}) => {
 
     const deleteInvitation = ()=>{
         deleteCourseInvitation(id, invitation.id).then(res=>{
-            console.log("a")
             const index = CourseContent.invitations.findIndex(Invitation=>Invitation.id===invitation.id);
             CourseContent.invitations.splice(index,1);
             const uploadedArray = CourseContent.invitations;
@@ -46,47 +45,100 @@ const InvitationCard = ({invitation}) => {
     }
 
     return (
-        <Box sx={{display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%"}} className={"member-card"}>
-            <Box sx={{display: "flex", justifyContent: "flex-start", alignItems:"center", width:"100%"}}>
-                <Avatar alt="Remy Sharp" src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg" sx={{width: 50, height: 50}}/>
-                <Box sx={{display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center"}}>
-                    <Box sx={{display: "flex", justifyContent: "flex-start", alignItems:"center"}}>
-                        <Typography>{`${invitation.user.name} ${invitation.isMentor?"(mentor)":"(member)"}`}</Typography>
-                    </Box>
-                    <Typography color={"textSecondary"} variant={"body2"}>{invitation.user.email}</Typography>
+        <Box
+            sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                width: "100%",
+                p: 2,
+                mt:1,
+                border: "1px solid #e0e0e0",
+                borderRadius: 2,
+                boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
+                transition: "background-color 0.3s",
+                "&:hover": {
+                    backgroundColor: "#fafafa"
+                }
+            }}
+            className="member-card"
+        >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, width: "100%" }}>
+                <Avatar
+                    alt={invitation.user.name}
+                    src={
+                        invitation.user.avatarUrl ||
+                        "https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg"
+                    }
+                    sx={{ width: 50, height: 50 }}
+                />
+                <Box>
+                    <Typography fontWeight={600}>
+                        {invitation.user.name}{" "}
+                        <Typography component="span" variant="body2" color="text.secondary">
+                            ({invitation.isMentor ? "mentor" : "member"})
+                        </Typography>
+                    </Typography>
+                    <Typography color="text.secondary" variant="body2">
+                        {invitation.user.email}
+                    </Typography>
                 </Box>
             </Box>
-            <Box sx={{display: "flex", justifyContent: "flex-start", alignItems:"center"}}>
-                <IconButton aria-label="actions" size="large" aria-haspopup="true">
-                    <EmailIcon/>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <IconButton aria-label="email" size="large">
+                    <EmailIcon />
                 </IconButton>
-                <>
-                    <IconButton aria-label="actions" size="large" onClick={handleClick}
-                                aria-haspopup="true">
-                        <MoreVertIcon />
-                    </IconButton>
-                    <Menu
-                        id="basic-menu"
-                        anchorEl={anchorEl}
-                        open={menuOpen}
-                        onClose={handleClose}
-                        MenuListProps={{
-                            'aria-labelledby': 'basic-button',
+
+                <IconButton
+                    aria-label="more"
+                    size="large"
+                    onClick={handleClick}
+                    aria-haspopup="true"
+                >
+                    <MoreVertIcon />
+                </IconButton>
+                <Menu
+                    id="basic-menu"
+                    anchorEl={anchorEl}
+                    open={menuOpen}
+                    onClose={handleClose}
+                    MenuListProps={{
+                        "aria-labelledby": "basic-button"
+                    }}
+                >
+                    <MenuItem onClick={editInvitation}>
+                        <EditIcon sx={{ mr: 1 }} />
+                        Edit role
+                    </MenuItem>
+                    <MenuItem
+                        onClick={() => {
+                            handleClose();
+                            setOpenConfirmDialog(true);
                         }}
+                        sx={{ color: "error.main" }}
                     >
-                        <MenuItem onClick={editInvitation}>
-                            <EditIcon sx={{marginRight: "5px"}}/>
-                            Edit role
-                        </MenuItem>
-                        <MenuItem onClick={()=>{handleClose();setOpenConfirmDialog(true)}} sx={{color:"red"}}>
-                            <DeleteIcon sx={{marginRight:"5px"}}/>
-                            Delete
-                        </MenuItem>
-                    </Menu>
-                </>
-                <EditInvitation invitation={invitation} open={editInvitationOpen} setOpen={setEditInvitationOpen}/>
+                        <DeleteIcon sx={{ mr: 1 }} />
+                        Delete
+                    </MenuItem>
+                </Menu>
+
+                <EditInvitation
+                    invitation={invitation}
+                    open={editInvitationOpen}
+                    setOpen={setEditInvitationOpen}
+                />
             </Box>
-            <ConfirmDialog title={"Delete invitation"} open={openConfirmDialog} onConfirm={deleteInvitation} onClose={()=>{setOpenConfirmDialog(false)}} message={"Are you sure you want to delete invitation?"}/>
+
+            <ConfirmDialog
+                title="Delete invitation"
+                open={openConfirmDialog}
+                onConfirm={deleteInvitation}
+                onClose={() => {
+                    setOpenConfirmDialog(false);
+                }}
+                message="Are you sure you want to delete this invitation?"
+            />
         </Box>
     );
 };

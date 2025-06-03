@@ -1,12 +1,12 @@
 import React, {useState} from 'react';
-import {Box} from "@mui/material";
+import {Box, Typography} from "@mui/material";
 import {observer} from "mobx-react-lite";
 import SingleChoiceQuestion from "./SingleChoiceQuestion";
 import MultipleChoiceQuestion from "./MultipleChoiceQuestion";
 import MatchingQuestion from "./MatchingQuestion";
 import OpenEndedQuestion from "./OpenEndedQuestion";
 
-const QuestionList = ({questions, isEdit, setQuestions}) => {
+const QuestionList = ({questions, isEdit, setQuestions, questionRefs}) => {
     const questionComponents = {
         singleChoice: SingleChoiceQuestion,
         multipleChoice: MultipleChoiceQuestion,
@@ -71,10 +71,12 @@ const QuestionList = ({questions, isEdit, setQuestions}) => {
                             onDragOver={(e) => dragOverHandler(e, index)}
                             onDrop={(e) => dropHandler(e, index)}
                             draggable={isEdit}
+                            ref={questionRefs?.[index]}
                         >
                             <Component
                                 question={question}
                                 isEdit={isEdit}
+                                index={index}
                                 deleteQuestion={() => {
                                     setQuestions([...questions.slice(0, index), ...questions.slice(index + 1)]);
                                 }}

@@ -6,7 +6,7 @@ import EventNoteIcon from '@mui/icons-material/EventNote';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
 import {Context} from "../index";
 import {useNavigate} from "react-router-dom";
-import {INVITATION_ROUTE, MAIN_ROUTE} from "../utils/consts";
+import {INVITATION_ROUTE, MAIN_ROUTE, TASK_LIST_ROUTE, TASK_SCHEDULE_PAGE_ROUTE} from "../utils/consts";
 import {observer} from "mobx-react-lite";
 
 const DrawerList = ({setOpen}) => {
@@ -24,15 +24,15 @@ const DrawerList = ({setOpen}) => {
                         <ListItemText primary="Courses"/>
                     </ListItemButton>
                 </ListItem>
-                <ListItem disablePadding>
+                <ListItem disablePadding onClick={()=>{navigate(TASK_LIST_ROUTE)}}>
                     <ListItemButton>
                         <ListItemIcon>
                             <AssignmentIcon/>
                         </ListItemIcon>
-                        <ListItemText primary="Tasks"/>
+                        <ListItemText primary="Assignments"/>
                     </ListItemButton>
                 </ListItem>
-                <ListItem disablePadding>
+                <ListItem disablePadding onClick={()=>{navigate(TASK_SCHEDULE_PAGE_ROUTE)}}>
                     <ListItemButton>
                         <ListItemIcon>
                             <EventNoteIcon/>

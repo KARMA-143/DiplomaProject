@@ -9,6 +9,8 @@ class TaskDTO {
         this.files= data.files.map((file)=>{
             return new FileDTO(file);
         })
+        this.courseName= data.Course.name;
+        this.isOpen=Date.now()>=new Date(data.openDate);
     }
 }
 

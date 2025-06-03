@@ -3,6 +3,7 @@ const InvitationDTO = require("../DTO/InvitationDTO");
 const sequelize = require("../db");
 const InvitationWithCourseDTO = require("../DTO/InvitationWithCourseDTO");
 const APIError = require("../exceptions/APIError");
+const mailService = require("./mailService");
 
 class invitationService {
     async getCourseInvitations(courseId){
@@ -16,6 +17,7 @@ class invitationService {
             const tempInvitation = await Invitation.create({courseId: courseId, userId: invitation.userId, isMentor: invitation.isMentor},{transaction:t});
             await t.commit();
             const newInvitation = await Invitation.findOne({where:{id: tempInvitation.id}, include:[{model:User, as:"user", attributes:["id", "name", "email"]}]});
+            await mailService.createInvitationInform(newInvitation);
             return new InvitationDTO(newInvitation);
         }
         catch (err){

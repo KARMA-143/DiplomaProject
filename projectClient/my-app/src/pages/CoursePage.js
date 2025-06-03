@@ -1,5 +1,5 @@
 import React, {useContext, useEffect} from 'react';
-import {Box, Tab} from "@mui/material";
+import {Box, Tab, Typography} from "@mui/material";
 import NavBar from "../components/NavBar";
 import {TabList, TabPanel, TabContext} from "@mui/lab";
 import {getCourseById} from "../http/courseAPI";
@@ -7,7 +7,7 @@ import {useNavigate, useParams} from "react-router-dom";
 import {MAIN_ROUTE} from "../utils/consts";
 import Loading from "../components/Loading";
 import CourseFeed from "../components/CourseFeed";
-import AssignmentsList from "../components/AssignmentsList";
+import CourseAssignments from "../components/CourseAssignments";
 import MembersList from "../components/MembersList";
 import {Context} from "../index";
 import {observer} from "mobx-react-lite";
@@ -51,7 +51,7 @@ const CoursePage = () => {
 
     return (
         <Box>
-            <NavBar/>
+            <NavBar TitleComponent={<Typography variant={"h6"} content={"div"}>{CourseContent.course.name}</Typography>}/>
             <TabContext value={tabValue}  >
                 <Box sx={{ borderBottom: 1, borderColor: 'divider', display:"flex", justifyContent:"center", marginTop: "10px"}}>
                     <TabList onChange={handleChange} aria-label="lab API tabs example">
@@ -61,7 +61,7 @@ const CoursePage = () => {
                     </TabList>
                 </Box>
                 <TabPanel value={"feed"}><CourseFeed/></TabPanel>
-                <TabPanel value={"assignments"} sx={{ p: "5px" }}><AssignmentsList/></TabPanel>
+                <TabPanel value={"assignments"} sx={{ p: "5px" }}><CourseAssignments/></TabPanel>
                 <TabPanel value={"members"}><MembersList/></TabPanel>
             </TabContext>
         </Box>

@@ -3,8 +3,9 @@ import {checkRole} from "../http/courseAPI";
 import {useNavigate, useParams} from "react-router-dom";
 import Loading from "./Loading";
 import {Context} from "../index";
+import {TEST_PAGE_ROUTE} from "../utils/consts";
 
-const CourseUserRoute = ({route}) => {
+const CourseUserRoute = ({route, path}) => {
     const {id} = useParams();
     const navigate = useNavigate();
     const {Task, Test} = useContext(Context);
@@ -12,8 +13,7 @@ const CourseUserRoute = ({route}) => {
 
     useEffect(() => {
         checkRole(id).then(res=>{
-
-            if(route?.type?.name==="TestPage"){
+            if(path===TEST_PAGE_ROUTE){
                 Test.role=res.role;
             }
             else{
@@ -26,7 +26,7 @@ const CourseUserRoute = ({route}) => {
             .finally(()=>{
                 setLoading(false);
             })
-    }, [id, navigate, Task]);
+    }, [id, navigate, Task, Test, path]);
     if(loading){
         return <Loading open={loading}/>;
     }

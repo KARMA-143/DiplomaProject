@@ -1,4 +1,4 @@
-import React, {useContext, useRef, useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {
     Accordion,
     AccordionDetails,
@@ -23,8 +23,8 @@ import {Context} from "../index";
 import Loading from "./Loading";
 import {observer} from "mobx-react-lite";
 import NewPostFeed from "./NewPostFeed";
-import {sendNewComment, updatePostComment} from "../http/commentAPI";
-import Comment from "./Comment";
+import {sendNewComment, updateComment} from "../http/commentAPI";
+import PostComment from "./PostComment";
 import * as uuid from "uuid";
 import HtmlTooltip from "./HtmlTooltip";
 import ConfirmDialog from "./ConfirmDialog";
@@ -43,7 +43,6 @@ const Post = ({post, editDenied, setEditDenied}) => {
     const [commentIsEdit, setCommentIsEdit] = useState(false);
     const [selectedComment, setSelectedComment] = useState(null);
     const [tempCommentText, setTempCommentText] = useState("");
-    const commentRef = useRef(null);
     const [openConfirmDialog, setOpenConfirmDialog] = useState(false);
 
     const handleClick = (event) => {
@@ -60,8 +59,20 @@ const Post = ({post, editDenied, setEditDenied}) => {
         setEditDenied(true);
     }
 
+    const isEmptyContent=(html)=> {
+        const div = document.createElement("div");
+        div.innerHTML = html;
+
+        const text = div.textContent.replace(/\u00A0/g, '');
+        return text.trim() === '';
+    }
+
     const sendComment = () => {
         const text = commentText;
+        if (!text.trim() || isEmptyContent(text)) {
+            setCommentText("");
+            return;
+        }
         if(commentIsEdit){
             const index = post.comments.indexOf(selectedComment);
             post.comments[index]={
@@ -70,7 +81,7 @@ const Post = ({post, editDenied, setEditDenied}) => {
                 author: User,
                 status: "updating..."
             };
-            updatePostComment(id, selectedComment.id, text).then(res=>{
+            updateComment(id, selectedComment.id, text).then(res=>{
                 const index = post.comments.findIndex(comment=>comment.id === selectedComment.id);
                 post.comments[index]=res;
                 SnackbarStore.show("comment was updated successfully!", "success");
@@ -97,6 +108,7 @@ const Post = ({post, editDenied, setEditDenied}) => {
                     SnackbarStore.show(error.response.data.message, "error");
                 })
         }
+        setExpanded(true);
     }
 
     const deletePost = ()=>{
@@ -119,13 +131,6 @@ const Post = ({post, editDenied, setEditDenied}) => {
         setSelectedComment(Comment);
         setTempCommentText(commentText);
         setCommentText(Comment.text);
-        setTimeout(()=>{
-            commentRef.current.focus();
-            commentRef.current.setSelectionRange(
-                commentRef.current.value.length,
-                commentRef.current.value.length
-            );
-        },0)
     }
 
     const cancelEditComment=()=>{
@@ -137,50 +142,59 @@ const Post = ({post, editDenied, setEditDenied}) => {
     }
 
     return (
-        <Box component={"div"} sx={{display: 'flex', flexDirection: 'column', alignItems: 'flex-start', border: "1px grey solid", borderRadius: 4, width: 700, padding: "5px"}}>
+        <Box
+            component={"div"}
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                border: "1px solid #ccc",
+                borderRadius: 4,
+                width: 700,
+                maxWidth: 700,
+                padding: 2,
+                backgroundColor: "#fff",
+                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
+                marginBottom: 3,
+            }}
+        >
             {
-                isEdit?
-                    <NewPostFeed currentPostText={post.text} currentPostFiles={post.files} isEdit={isEdit} setIsEdit={setIsEdit} postId={post.id} setEditDenied={setEditDenied}/>
+                isEdit ?
+                    <NewPostFeed currentPostText={post.text} currentPostFiles={post.files} isEdit={isEdit} setIsEdit={setIsEdit} postId={post.id} setEditDenied={setEditDenied} />
                     :
-                    <Box sx={{width:'100%'}}>
-                        <Loading open={loading}/>
-                        <Box component={"div"} sx={{display: "flex", alignItems: "flex-start", justifyContent: "space-between", width:"100%"}}>
-                            <Box sx={{display: "flex", flexDirection: "row", alignItems: "center"}}>
-                                <HtmlTooltip
-                                    title={
-                                        <React.Fragment>
-                                            <Box sx={{display: "flex", justifyContent: "flex-start", alignItems:"center", width:"100%"}}>
-                                                <Avatar alt="Remy Sharp" src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg" sx={{width: 30, height: 30}}/>
-                                                <Box sx={{display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center"}}>
-                                                    <Box sx={{display: "flex", justifyContent: "flex-start", alignItems:"center"}}>
-                                                        <Typography>{post.user.name}</Typography>
-                                                        {
-                                                            User.id===post.user.id &&
-                                                            <Typography sx={{marginLeft: "5px"}} color={"textSecondary"}>(you)</Typography>
-                                                        }
-                                                    </Box>
-                                                    <Typography color={"textSecondary"} variant={"body2"}>{post.user.email}</Typography>
-                                                </Box>
-                                            </Box>
-                                        </React.Fragment>
-                                    }
-                                >
+                    <Box sx={{ width: '100%' }}>
+                        <Loading open={loading} />
+                        <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", width: "100%" }}>
+                            <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1 }}>
+                                <HtmlTooltip title={(
+                                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                                        <Avatar alt={post.user.name} src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg" sx={{ width: 30, height: 30 }} />
+                                        <Box>
+                                            <Typography>{post.user.name}</Typography>
+                                            <Typography variant="body2" color="textSecondary">{post.user.email}</Typography>
+                                        </Box>
+                                    </Box>
+                                )}>
                                     <Chip
-                                        avatar={<Avatar alt="Remy Sharp" src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg" sx={{width: 50, height: 50}}/>}
-                                        label={`${post.user.name}${post.user.id===User.id?"(you)":""} ${format(post.createdAt, "dd MMM yyyy, HH:mm")}${post.updatedAt !== post.createdAt ? " (edited)" : ""}`}
+                                        avatar={<Avatar alt={post.user.name} src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg" sx={{ width: 40, height: 40 }} />}
+                                        label={`${post.user.name}${post.user.id === User.id ? " (you)" : ""} • ${format(post.createdAt, "dd MMM yyyy, HH:mm")}${post.updatedAt !== post.createdAt ? " (edited)" : ""}`}
                                         variant="outlined"
+                                        sx={{
+                                            borderRadius: "999px",
+                                            fontSize: "0.875rem",
+                                            backgroundColor: "#f5f5f5",
+                                            padding: "4px 8px"
+                                        }}
                                     />
                                 </HtmlTooltip>
                             </Box>
                             {
-                                (CourseContent.course.role==="creator" || (post.user.id===User.id && CourseContent.course.role!=="member")) && !editDenied &&
+                                (CourseContent.course.role === "creator" || (post.user.id === User.id && CourseContent.course.role !== "member")) && !editDenied &&
                                 <>
-                                    <IconButton aria-label="actions" size="small" onClick={handleClick}
-                                                aria-haspopup="true">
+                                    <IconButton size="small" onClick={handleClick}>
                                         <MoreVertIcon />
                                     </IconButton>
                                     <Menu
-                                        id="basic-menu"
                                         anchorEl={anchorEl}
                                         open={menuOpen}
                                         onClose={handleClose}
@@ -189,69 +203,116 @@ const Post = ({post, editDenied, setEditDenied}) => {
                                         }}
                                     >
                                         <MenuItem onClick={editPost}>
-                                            <EditIcon sx={{marginRight: "5px"}}/>
+                                            <EditIcon fontSize="small" sx={{ marginRight: 1 }} />
                                             Edit
                                         </MenuItem>
-                                        <MenuItem onClick={()=>{handleClose();setOpenConfirmDialog(true);}} sx={{color:"red"}}>
-                                            <DeleteIcon sx={{marginRight:"5px"}}/>
+                                        <MenuItem onClick={() => { handleClose(); setOpenConfirmDialog(true); }} sx={{ color: "error.main" }}>
+                                            <DeleteIcon fontSize="small" sx={{ marginRight: 1 }} />
                                             Delete
                                         </MenuItem>
                                     </Menu>
                                 </>
                             }
                         </Box>
-                        <Divider sx={{ my: 1, width: "100%", borderColor: "grey" }} />
+                        <Divider sx={{ my: 1, width: "100%", borderColor: "#eee" }} />
                         {post.text && (
                             <Box
-                                sx={{ marginLeft: "10px", padding: "5px", wordWrap: "break-word", wordBreak: "break-all" }}
+                                sx={{ marginLeft: 1, padding: "5px", wordWrap: "break-word", wordBreak: "break-all" }}
                                 dangerouslySetInnerHTML={{ __html: post.text }}
                             />
                         )}
                         {
-                            post.files.length>0 &&
-                            <Accordion expanded={fileExpanded} onChange={()=>setFileExpanded(!fileExpanded)} sx={{width: "100%", margin:"5px 0 5px 0", border: "1px solid grey", borderRadius:"10px"}}>
-                                <AccordionSummary sx={{height: "15px", color: "blue", textDecoration: "underline"}}>
+                            post.files.length > 0 &&
+                            <Accordion expanded={fileExpanded} onChange={() => setFileExpanded(!fileExpanded)} sx={{
+                                width: "100%",
+                                my: 1,
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                backgroundColor: "#fafafa",
+                                boxShadow: "none",
+                                '&:before': { display: 'none' },
+                            }}>
+                                <AccordionSummary sx={{ color: "blue", textDecoration: "underline" }}>
                                     {`${post.files.length} file(s)`}
                                 </AccordionSummary>
                                 <AccordionDetails>
-                                    <FileList files={post.files} isCreate={false}/>
+                                    <FileList files={post.files} isCreate={false} />
                                 </AccordionDetails>
                             </Accordion>
                         }
-                        <Divider sx={{ my: 1, width: "100%", borderColor: "grey" }} />
+                        <Divider sx={{ my: 1, width: "100%", borderColor: "#eee" }} />
                         {
                             post.comments.length > 0 &&
-                            <Accordion expanded={expanded} onChange={()=>setExpanded(!expanded)} sx={{width: "100%", margin:"5px 0 5px 0", border: "1px solid grey", borderRadius:"10px"}}>
-                                <AccordionSummary sx={{height: "15px", color: "blue", textDecoration: "underline"}}>
+                            <Accordion expanded={expanded} onChange={() => setExpanded(!expanded)} sx={{
+                                width: "100%",
+                                my: 1,
+                                border: "1px solid #ddd",
+                                borderRadius: "8px",
+                                backgroundColor: "#fafafa",
+                                boxShadow: "none",
+                                '&:before': { display: 'none' },
+                            }}>
+                                <AccordionSummary sx={{ color: "blue", textDecoration: "underline" }}>
                                     {`${post.comments.length} comment(s)`}
                                 </AccordionSummary>
                                 <AccordionDetails>
                                     {
-                                        post.comments.map((comment, index) => {
-                                            return <Box sx={{marginBottom: index!==post.comments.length-1?"5px":"0"}} key={index}>
-                                                <Comment comment={comment} editDenied={editDenied} post={post} editComment={editComment} selectedComment={selectedComment}/>
+                                        post.comments.map((comment, index) => (
+                                            <Box sx={{ marginBottom: index !== post.comments.length - 1 ? 1 : 0 }} key={index}>
+                                                <PostComment comment={comment} editDenied={editDenied} post={post} editComment={editComment} selectedComment={selectedComment} />
                                             </Box>
-                                        })
+                                        ))
                                     }
                                 </AccordionDetails>
                             </Accordion>
                         }
-                        <Box sx={{display: "flex"}}>
-                            <TextEditor value={commentText} onChange={setCommentText} type={"simple"} placeholder={"Comment"} visible={false} minHeight={"24px"} maxHeight={"120"}/>
-                            <IconButton aria-label="delete" onClick={sendComment}>
-                                <SendIcon />
-                            </IconButton>
-                            {
-                                commentIsEdit &&
-                                <Button onClick={()=>cancelEditComment()}>
-                                    Cancel
-                                </Button>
-                            }
+                        <Box sx={{ display: "flex", alignItems: "flex-end", gap: 1, mt: 1, width: "100%",  justifyContent:"center"}}>
+                            <TextEditor
+                                value={commentText}
+                                onChange={setCommentText}
+                                type={"simple"}
+                                placeholder={"Write a comment..."}
+                                visible={false}
+                                minHeight={"32px"}
+                                maxHeight={"120px"}
+                            />
+                            <Box sx={{display:"flex"}}>
+                                <IconButton
+                                    aria-label="send"
+                                    onClick={sendComment}
+                                    sx={{
+                                        alignSelf: "center",
+                                        color: "#1976d2",
+                                        '&:hover': {
+                                            backgroundColor: "rgba(25, 118, 210, 0.1)"
+                                        }
+                                    }}
+                                >
+                                    <SendIcon />
+                                </IconButton>
+                                {
+                                    commentIsEdit &&
+                                    <Button
+                                        variant={"outlined"}
+                                        color="error"
+                                        onClick={cancelEditComment}
+                                        sx={{
+                                            color: "gray",
+                                            alignSelf: "center",
+                                            textTransform: "none",
+                                            ml:1
+                                        }}
+                                    >
+                                        Cancel
+                                    </Button>
+                                }
+                            </Box>
                         </Box>
                     </Box>
             }
-            <ConfirmDialog open={openConfirmDialog} title={"Delete post"} message={"Are you sure want to delete this post?"} onConfirm={deletePost} onClose={()=>{setOpenConfirmDialog(false)}}/>
+            <ConfirmDialog open={openConfirmDialog} title={"Delete post"} message={"Are you sure want to delete this post?"} onConfirm={deletePost} onClose={() => { setOpenConfirmDialog(false) }} />
         </Box>
+
     );
 };
 

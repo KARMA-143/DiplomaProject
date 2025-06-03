@@ -7,7 +7,7 @@ import {
     IconButton,
     Radio,
     RadioGroup,
-    TextField,
+    TextField, Typography,
 } from "@mui/material";
 import {observer} from "mobx-react-lite";
 import AddIcon from "@mui/icons-material/Add";
@@ -15,7 +15,7 @@ import Tooltip from "@mui/material/Tooltip";
 import ClearIcon from "@mui/icons-material/Clear";
 import TextEditor from "./TextEditor";
 
-const SingleChoiceQuestion = ({question, isEdit, deleteQuestion}) => {
+const SingleChoiceQuestion = ({question, isEdit, deleteQuestion, index}) => {
     const [questionText, setQuestionText] = useState(question.text || "");
     const [options, setOptions] = useState(question.options || ["",""]);
     const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer || 0);
@@ -50,6 +50,13 @@ const SingleChoiceQuestion = ({question, isEdit, deleteQuestion}) => {
             boxShadow: 2,
             mb: 3
         }}>
+            <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ mb: 1, fontWeight: 'bold' }}
+            >
+                Question {index + 1}
+            </Typography>
             {
                 isEdit?
                     <>

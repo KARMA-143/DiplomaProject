@@ -174,6 +174,15 @@ class courseService{
         const courseOwner = await Course.findOne({where:{id: courseId}});
         return [...courseUsers.map(user=>{return user.UserId}), courseOwner.creatorId];
     }
+
+    async getCourseMembers(courseId){
+        return await CourseUsers.findAll({where:{CourseId: courseId, isMentor: false}, include: [
+                {
+                    model: User,
+                    attributes: ['email']
+                }
+            ]});
+    }
 }
 
 module.exports = new courseService();

@@ -1,7 +1,5 @@
 const { DataTypes, JSON} = require("sequelize");
 const sequelize = require("../db");
-const mongoose = require("mongoose");
-const {model} = require("mongoose");
 
 const User = sequelize.define("User", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -41,7 +39,7 @@ const Post = sequelize.define("Post", {
 const Task = sequelize.define("Task", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
     title: { type: DataTypes.STRING, allowNull: false },
-    text: { type: DataTypes.STRING, allowNull: false },
+    text: { type: DataTypes.TEXT, allowNull: false },
     openDate:{type: DataTypes.DATE, allowNull: false},
     dueDate: { type: DataTypes.DATE, allowNull: false },
 });
@@ -52,14 +50,27 @@ const Test = sequelize.define("Test",{
     questions: {type: DataTypes.JSON, allowNull: false},
     openDate:{type: DataTypes.DATE, allowNull: false},
     dueDate: { type: DataTypes.DATE, allowNull: false },
+    timeLimit:{type:DataTypes.INTEGER}
 });
+
+const TestAttempt = sequelize.define("TestAttempt",{
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    startTime:{type:DataTypes.DATE, allowNull:false},
+    answers:{type:DataTypes.JSON}
+})
 
 const UserTask = sequelize.define("UserTask", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    isAccepted: { type: DataTypes.BOOLEAN, defaultValue: false },
-    extendedDueDate: { type: DataTypes.DATE, allowNull: true },
+    text: { type: DataTypes.TEXT, allowNull: false },
     mark: {type: DataTypes.INTEGER, allowNull: true, validate: {min: 1, max: 10}}
 });
+
+const CompleteTest = sequelize.define("CompleteTest",{
+    id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+    answers: {type: DataTypes.JSON},
+    mark: {type: DataTypes.INTEGER, allowNull: true, validate: {min: 1, max: 10}},
+    points:{type:DataTypes.JSON}
+})
 
 const File = sequelize.define("File", {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
@@ -108,12 +119,16 @@ Message.belongsTo(User);
 
 User.belongsToMany(Chat, { through: ChatUsers, onDelete: "CASCADE" });
 Chat.belongsToMany(User, { through: ChatUsers, onDelete: "CASCADE" });
+ChatUsers.belongsTo(User, { foreignKey: 'UserId' });
+ChatUsers.belongsTo(Chat, { foreignKey: 'ChatId' });
+User.hasMany(ChatUsers, { foreignKey: 'UserId', onDelete: "CASCADE" });
+Chat.hasMany(ChatUsers, { foreignKey: 'ChatId', onDelete: "CASCADE" });
 
 Course.belongsTo(User, { as: "creator" });
 User.belongsToMany(Course, { through: CourseUsers, onDelete: "CASCADE" });
 Course.belongsToMany(User, { through: CourseUsers, onDelete: "CASCADE" });
-CourseUsers.belongsTo(User, {foreignKey: "UserId"});
-CourseUsers.belongsTo(Course, {foreignKey: "CourseId"});
+CourseUsers.belongsTo(User, { foreignKey: 'UserId' });
+CourseUsers.belongsTo(Course, { foreignKey: 'CourseId' });
 
 Course.hasMany(Post, { onDelete: "CASCADE" });
 Post.belongsTo(Course);
@@ -129,6 +144,19 @@ Test.belongsTo(Course);
 
 User.belongsToMany(Task, { through: UserTask, onDelete: "CASCADE" });
 Task.belongsToMany(User, { through: UserTask, onDelete: "CASCADE" });
+UserTask.belongsTo(Task, { foreignKey: 'TaskId' });
+UserTask.belongsTo(User, { foreignKey: "UserId" });
+
+User.belongsToMany(Test, { through: CompleteTest, onDelete: "CASCADE" });
+Test.belongsToMany(User, { through: CompleteTest, onDelete: "CASCADE" });
+CompleteTest.hasMany(Test, {foreignKey:"TestId"});
+CompleteTest.hasMany(User, {foreignKey:"UserId"});
+
+User.hasMany(TestAttempt, { foreignKey: 'UserId', onDelete: 'CASCADE' });
+TestAttempt.belongsTo(User, { foreignKey: 'UserId' });
+
+Test.hasMany(TestAttempt, { foreignKey: 'TestId', onDelete: 'CASCADE' });
+TestAttempt.belongsTo(Test, { foreignKey: 'TestId' });
 
 Comment.belongsTo(User, { as: "author" });
 
@@ -152,5 +180,7 @@ module.exports = {
     Message,
     ChatUsers,
     Invitation,
-    Test
+    Test,
+    CompleteTest,
+    TestAttempt
 };

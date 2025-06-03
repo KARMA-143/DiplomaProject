@@ -7,7 +7,16 @@ export class TestStore {
         this._dueDate = undefined;
         this._questions = undefined;
         this._role=undefined;
+        this._courseName=undefined;
+        this._isOpen=undefined;
+        this._timeLimit=undefined;
         makeAutoObservable(this);
+    }
+    get timeLimit() {
+        return this._timeLimit;
+    }
+    set timeLimit(value) {
+        this._timeLimit = value;
     }
     get title() {
         return this._title;
@@ -39,10 +48,25 @@ export class TestStore {
     set role(value) {
         this._role = value;
     }
+    get courseName() {
+        return this._courseName;
+    }
+    set courseName(value) {
+        this._courseName = value;
+    }
+    get isOpen() {
+        return this._isOpen;
+    }
+    set isOpen(value) {
+        this._isOpen = value;
+    }
     setTest(test) {
         this._title = test.title;
         this._openDate = test.openDate;
         this._dueDate = test.dueDate;
         this._questions = test.questions;
+        this._courseName = test.courseName;
+        this._isOpen = test.isOpen;
+        this._timeLimit=test.timeLimit;
     }
 }

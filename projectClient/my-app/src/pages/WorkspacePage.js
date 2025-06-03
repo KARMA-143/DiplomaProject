@@ -36,7 +36,7 @@ const WorkspacePage = () => {
 
     return (
         <>
-            <NavBar />
+            <NavBar TitleComponent={<Typography variant={"h6"} content={"div"}>Workspace</Typography>}/>
             {
                 Courses.courses.length === 0 ?
                     <Box sx={{display: "flex", justifyContent: "center", marginTop: "10px"}}>

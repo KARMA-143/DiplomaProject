@@ -11,6 +11,7 @@ import {SnackbarStore} from "./stores/SnackbarStore";
 import {InvitationStore} from "./stores/InvitationStore";
 import {TaskStore} from "./stores/TaskStore";
 import {TestStore} from "./stores/TestStore";
+import {UserAssignments} from "./stores/UserAssignments";
 export const Context = createContext(null);
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -24,6 +25,7 @@ root.render(
       Invitations: new InvitationStore(),
       Task: new TaskStore(),
       Test: new TestStore(),
+      UserAssignments: new UserAssignments()
   }}>
       <BrowserRouter>
           <App/>

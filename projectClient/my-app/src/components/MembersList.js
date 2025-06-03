@@ -10,7 +10,7 @@ import {
     DialogContent, DialogActions, Button, Dialog
 } from "@mui/material";
 import {Context} from "../index";
-import {useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import Loading from "./Loading";
 import {fetchCourseUsers} from "../http/courseAPI";
 import MemberCard from "./MemberCard";
@@ -26,11 +26,13 @@ import {QRCodeSVG} from "qrcode.react";
 import QrCode2Icon from '@mui/icons-material/QrCode2';
 import {getCourseInvitations} from "../http/invitationAPI";
 import InvitationCard from "./InvitationCard";
-import {APP_URL} from "../utils/consts";
+import {APP_URL, CHAT_PAGE_ROUTE} from "../utils/consts";
+import {navigate} from "react-big-calendar/lib/utils/constants";
 
 const MembersList = () => {
     const {CourseContent, SnackbarStore, User} = useContext(Context);
     const {id} = useParams();
+    const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [openInviteUserDialog, setOpenInviteUserDialog] = useState(false);
     const [QROpen, setQROpen] = useState(false);
@@ -72,135 +74,201 @@ const MembersList = () => {
     }
 
     return (
-        <Box sx={{display: "flex",flexDirection:"column", alignItems: "center"}}>
-            {
-                CourseContent.course.role!=="member" &&
-                <Paper elevation={2} sx={{ p: 2, width: '100%', maxWidth: '700px', mb: 2 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <Box
+            sx={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                overflowY: "auto",
+                height: "80vh",
+                px: 2,
+                py: 3,
+                gap: 2,
+            }}
+        >
+            {CourseContent.course.role !== "member" && (
+                <Paper
+                    elevation={3}
+                    sx={{
+                        p: 3,
+                        width: "100%",
+                        maxWidth: "700px",
+                        borderRadius: 3,
+                        backgroundColor: "background.paper",
+                    }}
+                >
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 2,
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <Typography variant="subtitle2">Course code:</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 500 }}>{CourseContent.course.code}</Typography>
+                            <Typography variant="body1" fontWeight={600}>
+                                {CourseContent.course.code}
+                            </Typography>
                             <Tooltip title="Copy code to clipboard">
-                                <IconButton onClick={()=>onCopy(CourseContent.course.code)} size="small">
+                                <IconButton onClick={() => onCopy(CourseContent.course.code)} size="small">
                                     <ContentCopyIcon fontSize="small" />
                                 </IconButton>
                             </Tooltip>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <HtmlTooltip
                                 title={
-                                    <React.Fragment>
-                                        <Typography variant={"body1"}>
-                                            {`${APP_URL}/course/join/${CourseContent.course.code}`}
-                                        </Typography>
-                                    </React.Fragment>
+                                    <Typography variant="body2">
+                                        {`${APP_URL}/course/join/${CourseContent.course.code}`}
+                                    </Typography>
                                 }
                             >
-                                <Box sx={{display:"flex", alignItems:"center"}}>
+                                <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                                     <Typography variant="subtitle2">Link:</Typography>
                                     <Typography
                                         variant="body2"
                                         color="text.secondary"
                                         noWrap
-                                        sx={{ maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis' }}
+                                        sx={{
+                                            maxWidth: 180,
+                                            textOverflow: "ellipsis",
+                                            overflow: "hidden",
+                                        }}
                                     >
                                         {`${APP_URL}/course/join/${CourseContent.course.code}`}
                                     </Typography>
                                 </Box>
                             </HtmlTooltip>
-
                             <Tooltip title="Copy link to clipboard">
-                                <IconButton onClick={() => onCopy(`http://localhost:3000/course/join/${CourseContent.course.code}`)} size="small">
+                                <IconButton
+                                    onClick={() =>
+                                        onCopy(`${APP_URL}/course/join/${CourseContent.course.code}`)
+                                    }
+                                    size="small"
+                                >
                                     <ContentCopyIcon fontSize="small" />
                                 </IconButton>
                             </Tooltip>
-                            <Tooltip title={"open QR-code to join course"}>
-                                <IconButton onClick={()=>setQROpen(true)} size="small">
-                                    <QrCode2Icon fontSize="small"/>
+                            <Tooltip title="Open QR-code to join course">
+                                <IconButton onClick={() => setQROpen(true)} size="small">
+                                    <QrCode2Icon fontSize="small" />
                                 </IconButton>
                             </Tooltip>
                         </Box>
+
                         <Box>
-                            <IconButton onClick={()=>setOpenInviteUserDialog(true)}>
-                                <PersonAddAltIcon size={"large"}/>
-                            </IconButton>
-                            <InviteUserDialog open={openInviteUserDialog} setOpen={setOpenInviteUserDialog}/>
+                            <Tooltip title="Invite user">
+                                <IconButton onClick={() => setOpenInviteUserDialog(true)}>
+                                    <PersonAddAltIcon />
+                                </IconButton>
+                            </Tooltip>
+                            <InviteUserDialog open={openInviteUserDialog} setOpen={setOpenInviteUserDialog} />
                         </Box>
                     </Box>
                 </Paper>
-            }
-            <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', width: "700px"}}>
-                <Typography>
+            )}
+
+            <Box sx={{ width: "100%", maxWidth: "700px" }}>
+                <Typography variant="h6" fontWeight={600}>
                     Mentors
                 </Typography>
-                <Divider sx={{ my: 1, width: "100%", borderColor: "grey" }} />
-                <Box sx={{width:"100%", display: "flex", justifyContent: "space-between"}} className={"member-card"}>
-                    <Box sx={{display: "flex", justifyContent: "flex-start", alignItems:"center", width:"100%"}}>
-                        <Avatar alt="Remy Sharp" src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg" sx={{width: 50, height: 50}}/>
-                        <Box sx={{display: "flex", flexDirection: "column", alignItems: "flex-start", justifyContent: "center"}}>
-                            <Box sx={{display: "flex", justifyContent: "flex-start", alignItems:"center"}}>
-                                <Typography>{CourseContent.course.creator.name}</Typography>
-                                <Typography sx={{marginLeft: "5px"}} color={"textSecondary"}>owner</Typography>
-                                {
-                                    User.id===CourseContent.course.creator.id &&
-                                    <Typography sx={{marginLeft: "5px"}} color={"textSecondary"}>(you)</Typography>
-                                }
-                            </Box>
-                            <Typography color={"textSecondary"} variant={"body2"}>{CourseContent.course.creator.email}</Typography>
+                <Divider sx={{ my: 1 }} />
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        px: 2,
+                        py: 1.5,
+                        border: "1px solid #e0e0e0",
+                        borderRadius: 2,
+                        mb: 1,
+                        backgroundColor: "#fafafa",
+                    }}
+                >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                        <Avatar
+                            src={
+                                CourseContent.course.creator.avatarUrl ||
+                                "https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg"
+                            }
+                            sx={{ width: 50, height: 50 }}
+                        />
+                        <Box>
+                            <Typography fontWeight={600}>
+                                {CourseContent.course.creator.name}
+                                <Typography component="span" variant="body2" color="text.secondary" ml={1}>
+                                    owner
+                                </Typography>
+                                {User.id === CourseContent.course.creator.id && (
+                                    <Typography component="span" variant="body2" color="text.secondary" ml={1}>
+                                        (you)
+                                    </Typography>
+                                )}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                {CourseContent.course.creator.email}
+                            </Typography>
                         </Box>
                     </Box>
-                    {
-                        User.id!==CourseContent.course.creator.id &&
-                        <IconButton aria-label="actions" size="large"
-                                    aria-haspopup="true">
-                            <EmailIcon/>
+
+                    {User.id !== CourseContent.course.creator.id && (
+                        <IconButton aria-label="email" size="large" onClick={()=>navigate(CHAT_PAGE_ROUTE.replace(":id", id).replace(":userId", CourseContent.course.creator.id))}>
+                            <EmailIcon />
                         </IconButton>
-                    }
+                    )}
                 </Box>
-                {
-                    CourseContent.members.filter(member => member.user.role==="mentor").map(member => {
-                        return <MemberCard member={member} key={member.id}/>
-                    })
-                }
-                <Divider sx={{ my: 1, width: "100%", borderColor: "grey" }} />
-                <Typography>
+
+                {CourseContent.members
+                    .filter((member) => member.user.role === "mentor")
+                    .map((member) => (
+                        <MemberCard member={member} key={member.id} />
+                    ))}
+
+                <Divider sx={{ my: 2 }} />
+                <Typography variant="h6" fontWeight={600}>
                     Members
                 </Typography>
-                {
-                    CourseContent.members.filter(member => member.user.role==="member").length > 0?
-                        CourseContent.members.filter(member => member.user.role==="member").map(member => {
-                            return <MemberCard member={member} key={member.id}/>
-                        })
-                        :
-                        <Typography variant="body1">This course has no members right now</Typography>
+                <Divider sx={{ my: 1 }} />
 
-                }
-                <Divider sx={{ my: 1, width: "100%", borderColor: "grey" }} />
-                <Dialog
-                    open={QROpen}
-                    onClose={()=>setQROpen(false)}>
+                {CourseContent.members.filter((member) => member.user.role === "member").length > 0 ? (
+                    CourseContent.members
+                        .filter((member) => member.user.role === "member")
+                        .map((member) => <MemberCard member={member} key={member.id} />)
+                ) : (
+                    <Typography variant="body1" color="text.secondary">
+                        This course has no members right now
+                    </Typography>
+                )}
+
+                <Divider sx={{ my: 2 }} />
+                <Dialog open={QROpen} onClose={() => setQROpen(false)}>
                     <DialogTitle>Join course with QR-code</DialogTitle>
-                    <DialogContent sx={{display: "flex", justifyContent: "center"}}>
-                        <QRCodeSVG value={`${APP_URL}/course/join/${CourseContent.course.code}`} size={256}/>
+                    <DialogContent sx={{ display: "flex", justifyContent: "center", p: 3 }}>
+                        <QRCodeSVG value={`${APP_URL}/course/join/${CourseContent.course.code}`} size={256} />
                     </DialogContent>
-                    <DialogActions sx={{display: "flex", justifyContent: "center"}}>
-                        <Button onClick={()=>setQROpen(false)}>Close</Button>
+                    <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+                        <Button variant="outlined" onClick={() => setQROpen(false)}>
+                            Close
+                        </Button>
                     </DialogActions>
                 </Dialog>
-                {
-                    CourseContent.course.role!=="member" && CourseContent.invitations.length>0 &&
+
+                {CourseContent.course.role !== "member" && CourseContent.invitations.length > 0 && (
                     <>
-                        <Typography>
+                        <Typography variant="h6" fontWeight={600} mt={3}>
                             Invitations
                         </Typography>
-                        {
-                            CourseContent.invitations.map((invitation)=>{
-                                return <InvitationCard invitation={invitation} key={invitation.id}/>
-                            })
-                    }
+                        <Divider sx={{ my: 1 }} />
+                        {CourseContent.invitations.map((invitation) => (
+                            <InvitationCard invitation={invitation} key={invitation.id} />
+                        ))}
                     </>
-
-                }
+                )}
             </Box>
         </Box>
     );

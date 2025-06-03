@@ -23,7 +23,7 @@ const AppRouter = () => {
             }
             {
                 courseUserRoutes.map(({path, Component}) => {
-                    return <Route key={path} path={path} element={<CourseUserRoute route={<Component/>}/>} exact/>
+                    return <Route key={path} path={path} element={<CourseUserRoute route={<Component/>} path={path}/>} exact/>
                 })
             }
         </Routes>

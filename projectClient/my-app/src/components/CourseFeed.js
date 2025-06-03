@@ -31,10 +31,10 @@ const CourseFeed = () => {
     }
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+        <Box sx={{display: 'flex', flexDirection: 'column', alignItems: 'center', overflowY: 'auto', height:"80vh"}}>
             {
                 CourseContent.course.role!=="member" &&
-                <Box sx={{marginBottom: "10px", width: 700, border:"1px solid black", borderRadius: "10px", padding: "5px"}}>
+                <Box sx={{marginBottom: "10px", width: 700, border:"1px solid #ccc", borderRadius: "10px", padding: "5px"}}>
                     <NewPostFeed/>
                 </Box>
             }

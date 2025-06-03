@@ -10,7 +10,7 @@ import Tooltip from "@mui/material/Tooltip";
 import ClearIcon from "@mui/icons-material/Clear";
 import TextEditor from "./TextEditor";
 
-const OpenEndedQuestion = ({question, isEdit, deleteQuestion}) => {
+const OpenEndedQuestion = ({question, isEdit, deleteQuestion, index}) => {
     const [questionText, setQuestionText] = useState(question.text || "");
     const [correctAnswer, setCorrectAnswer] = useState(question.correctAnswer || "");
 
@@ -29,6 +29,13 @@ const OpenEndedQuestion = ({question, isEdit, deleteQuestion}) => {
             boxShadow: 2,
             mb: 3,
         }}>
+            <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ mb: 1, fontWeight: 'bold' }}
+            >
+                Question {index + 1}
+            </Typography>
             {
                 isEdit?
                     <>

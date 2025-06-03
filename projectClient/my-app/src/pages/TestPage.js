@@ -1,6 +1,6 @@
 import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {
-    Box, Typography, Paper, Stack, Divider, IconButton, Menu, MenuItem, TextField, Button,
+    Box, Typography, Paper, Stack, Divider, IconButton, Menu, MenuItem, TextField, Button, Breadcrumbs, Link,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import dayjs from "dayjs";
@@ -14,7 +14,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ConfirmDialog from "../components/ConfirmDialog";
 import NavBar from "../components/NavBar";
 import QuestionList from "../components/QuestionList";
-import {deleteCourseTest, editCourseTest, getTest} from "../http/assignmentAPI";
+import {checkAttempt, deleteCourseTest, editCourseTest, getCompleteTest, getTest} from "../http/assignmentAPI";
 import {DateTimePicker, LocalizationProvider} from "@mui/x-date-pickers";
 import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
 import Tooltip from "@mui/material/Tooltip";
@@ -23,7 +23,10 @@ import RadioButtonCheckedIcon from "@mui/icons-material/RadioButtonChecked";
 import CheckBoxIcon from "@mui/icons-material/CheckBox";
 import ShortTextIcon from "@mui/icons-material/ShortText";
 import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
-import {COURSE_PAGE_ROUTE} from "../utils/consts";
+import {COURSE_PAGE_ROUTE, PASS_TEST_PAGE} from "../utils/consts";
+import TestResults from "../components/TestResults";
+import CompleteTestCard from "../components/CompleteTestCard";
+import LockIcon from "@mui/icons-material/Lock";
 
 dayjs.extend(duration);
 
@@ -42,10 +45,50 @@ const TestPage = () => {
     const [dueDate, setDueDate] = useState(null);
     const [title, setTitle] = useState("");
     const [questions, setQuestions] = useState([]);
+    const [titleError, setTitleError] = useState(false);
+    const [dateTouched, setDateTouched] = useState(false);
+    const [timeLimit, setTimeLimit]=useState(null);
+    const [timeLimitError, setTimeLimitError]=useState(false);
+    const [isStarted, setIsStarted] = useState(false);
+    const [isCompleted, setIsCompleted] = useState(true);
+    const [results, setResults] = useState([]);
+    const [completeTests, setCompleteTests] = useState([]);
+
+    const questionRefs = useMemo(() => questions.map(() => React.createRef()), [questions]);
 
     useEffect(() => {
         getTest(id, testId).then(res=>{
             Test.setTest(res);
+            console.log(res);
+            if(Test.role==="member"){
+                checkAttempt(id, testId).then(res=>{
+                    if(res?.status){
+                        setIsCompleted(false);
+                        if(res.status==="resume"){
+                            setIsStarted(true);
+                        }
+                        else{
+                            setIsStarted(false);
+                        }
+                    }
+                    else{
+                        setIsCompleted(true);
+                        setResults(res);
+                    }
+                })
+                    .catch(err=>{
+                        SnackbarStore.show(err.response.data.message, "error");
+                    })
+            }
+            else{
+                getCompleteTest(id, testId).then(res=>{
+                    setCompleteTests(res);
+                    console.log(res);
+                })
+                    .catch(err=>{
+                        SnackbarStore.show(err.response.data.message, "error");
+                    })
+            }
         })
             .catch(err=>{
                 SnackbarStore.show(err.response.data.message, "error");
@@ -54,7 +97,7 @@ const TestPage = () => {
             .finally(()=>{
                 setLoading(false);
             })
-    }, []);
+    }, [Test, id, SnackbarStore, navigate, testId]);
 
     const handleMenuClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -82,6 +125,7 @@ const TestPage = () => {
         setDueDate(dayjs(Test.dueDate));
         setTitle(Test.title);
         setQuestions(Test.questions);
+        setTimeLimit(Test.timeLimit)
         setIsEdit(true);
         setLoading(false);
     }
@@ -96,10 +140,7 @@ const TestPage = () => {
     const dateDiffString = useMemo(() => {
         if (Test.openDate && Test.dueDate) {
             const diffMs = dayjs(Test.dueDate).diff(dayjs(Test.openDate));
-            const dur = dayjs.duration(diffMs);
-            const days = dur.days();
-            const hours = dur.hours();
-            return `${days} day${days !== 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
+            return dayjs.duration(diffMs).humanize();
         }
         return '';
     }, [Test.openDate, Test.dueDate]);
@@ -117,27 +158,104 @@ const TestPage = () => {
         return null;
     }, [Test.openDate, Test.dueDate]);
 
-    const sendEditRequest=()=>{
+    const [invalidIndices, setInvalidIndices] = useState([]);
+
+    const sendEditRequest = () => {
+        let hasError = false;
+
+        if(!questions.length > 0) {
+            SnackbarStore.show("Test required have 1 question!", "error");
+            hasError = true;
+        }
+
+        if (!title.trim()) {
+            setTitleError(true);
+            hasError = true;
+        } else {
+            setTitleError(false);
+        }
+
+        if (!openDate || !dueDate) {
+            setDateTouched(true);
+            SnackbarStore.show("Please select both open and close dates", "error");
+            hasError = true;
+        } else if (dateError) {
+            SnackbarStore.show("Date range is invalid", "error");
+            hasError = true;
+        }
+
+        if(!timeLimit){
+            setTimeLimitError(true);
+            hasError=true;
+        }
+
+        const invalidQuestionIndices = [];
+
+        const hasInvalidQuestion = questions.some((q, i) => {
+            let invalid = false;
+
+            if (!q.type || !q.text?.trim()) invalid = true;
+
+            const hasEmptyOptions = Array.isArray(q.options) && q.options.some(opt => !opt?.trim());
+            const hasEmptyAnswers = Array.isArray(q.answers) && q.answers.some(ans => !ans?.trim());
+
+            if (q.type === "singleChoice") {
+                if (!Array.isArray(q.options) || q.options.length < 2 || hasEmptyOptions) invalid = true;
+                if (typeof q.correctAnswer !== "number" || q.correctAnswer < 0 || q.correctAnswer >= q.options.length) invalid = true;
+            }
+
+            if (q.type === "multipleChoice") {
+                if (!Array.isArray(q.options) || q.options.length < 2 || hasEmptyOptions) invalid = true;
+                if (!Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0) invalid = true;
+                if (q.correctAnswer.some(i => typeof i !== "number" || i < 0 || i >= q.options.length)) invalid = true;
+            }
+
+            if (q.type === "openEnded") {
+                if (!q.correctAnswer?.trim()) invalid = true;
+            }
+
+            if (q.type === "matching") {
+                if (!Array.isArray(q.correctAnswer) || q.correctAnswer.length === 0) invalid = true;
+                if (!Array.isArray(q.options) || q.options.length < 2 || hasEmptyOptions) invalid = true;
+                if (!Array.isArray(q.answers) || q.answers.length < 2 || hasEmptyAnswers) invalid = true;
+                if (q.correctAnswer.some(pair => !pair.option?.trim() || !pair.answer?.trim())) invalid = true;
+            }
+
+            if (invalid) invalidQuestionIndices.push(i);
+            return invalid;
+        });
+
+        if (hasInvalidQuestion) {
+            setInvalidIndices(invalidQuestionIndices);
+            SnackbarStore.show("Some questions are invalid", "error");
+            hasError = true;
+        } else {
+            setInvalidIndices([]);
+        }
+
+        if (hasError) return;
+
         setLoading(true);
-        const data={
-            questions: questions,
+        const data = {
+            questions,
             openDate,
             dueDate,
-            title
-        }
+            title,
+            timeLimit
+        };
         editCourseTest(id, testId, data)
             .then(res => {
-                SnackbarStore.show("Task was updated successfully!", "success");
+                SnackbarStore.show("Test was updated successfully!", "success");
                 Test.setTest(res);
                 setIsEdit(false);
             })
             .catch((error) => {
-                SnackbarStore.show(error.response.data.message, "error");
+                SnackbarStore.show(error.response?.data?.message || "Edit failed", "error");
             })
             .finally(() => {
                 setLoading(false);
             });
-    }
+    };
 
     const deleteTest=()=>{
         setLoading(true);
@@ -158,11 +276,21 @@ const TestPage = () => {
 
     return (
         <Box>
-            <NavBar />
+            <NavBar TitleComponent={<Breadcrumbs aria-label="breadcrumb" sx={{color:"white"}}>
+                <Link
+                    underline="hover"
+                    variant={"h6"}
+                    sx={{color:"white"}}
+                    href={COURSE_PAGE_ROUTE.replace(":id", id).replace(":tab","assignments")}
+                >
+                    {Test.courseName}
+                </Link>
+                <Typography variant={"h6"} content={"div"}>{Test.title}</Typography>
+            </Breadcrumbs>}/>
             {
                 isEdit?
-                    <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                        <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p: 4, borderRadius: 4 }}>
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 2, p: 2 }}>
+                        <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p: 2, borderRadius: 4, maxHeight: "85vh", overflow: "auto"}}>
                             <Typography variant="h5" fontWeight="bold" gutterBottom>
                                 Create New Test
                             </Typography>
@@ -171,7 +299,12 @@ const TestPage = () => {
                                     fullWidth
                                     value={title}
                                     size="small"
-                                    onChange={(e) => setTitle(e.target.value)}
+                                    onChange={(e) => {
+                                        setTitle(e.target.value);
+                                        if (e.target.value.trim()) setTitleError(false);
+                                    }}
+                                    error={titleError}
+                                    helperText={titleError ? "Test title is required" : ""}
                                     variant="outlined"
                                     label="Test Title"
                                 />
@@ -182,13 +315,16 @@ const TestPage = () => {
                                             ampm={false}
                                             format="DD-MM-YYYY dddd HH:mm"
                                             value={openDate}
-                                            onChange={setOpenDate}
+                                            onChange={(value) => {
+                                                setOpenDate(value);
+                                                setDateTouched(true);
+                                            }}
                                             slotProps={{
                                                 textField: {
                                                     fullWidth: true,
                                                     size: "small",
-                                                    error: dateError,
-                                                    helperText: dateError ? "Open time must be before close time" : ""
+                                                    error: dateTouched && (!openDate || dateError),
+                                                    helperText: dateTouched && !openDate ? "Open date is required" : (dateError ? "Open time must be before close time" : "")
                                                 }
                                             }}
                                         />
@@ -197,15 +333,34 @@ const TestPage = () => {
                                             ampm={false}
                                             format="DD-MM-YYYY dddd HH:mm"
                                             value={dueDate}
-                                            onChange={setDueDate}
+                                            onChange={(value) => {
+                                                setDueDate(value);
+                                                setDateTouched(true);
+                                            }}
                                             slotProps={{
                                                 textField: {
                                                     fullWidth: true,
-                                                    error: dateError,
                                                     size: "small",
-                                                    helperText: dateError ? "Close time must be after open time" : ""
+                                                    error: dateTouched && (!dueDate || dateError),
+                                                    helperText: dateTouched && !dueDate ? "Close date is required" : (dateError ? "Close time must be after open time" : "")
                                                 }
                                             }}
+                                        />
+                                        <TextField
+                                            fullWidth
+                                            size="small"
+                                            type="number"
+                                            label="Time Limit (minutes)"
+                                            value={timeLimit}
+                                            error={timeLimitError}
+                                            onChange={(e) => {
+                                                const val = parseInt(e.target.value, 10);
+                                                if (!isNaN(val)) setTimeLimit(val);
+                                                else setTimeLimit('');
+                                            }}
+                                            inputProps={{ min: 1 }}
+                                            helperText={timeLimitError? "time can't be undefined!" : "Specify the duration allowed to complete the test"}
+                                            variant="outlined"
                                         />
                                     </Stack>
                                 </LocalizationProvider>
@@ -222,7 +377,6 @@ const TestPage = () => {
                                     </Typography>
                                 </Box>
                                 <Divider />
-
                                 <Box sx={{
                                     width:"100%",
                                     display: "flex",
@@ -238,7 +392,7 @@ const TestPage = () => {
                                     }}>
                                         {
                                             questions.length>0 &&
-                                            <QuestionList questions={questions} isEdit={true} setQuestions={setQuestions}/>
+                                            <QuestionList questions={questions} isEdit={true} setQuestions={setQuestions} questionRefs={questionRefs}/>
                                         }
                                     </Box>
                                     <Box>
@@ -249,6 +403,46 @@ const TestPage = () => {
                                                 <AddIcon/>
                                             </IconButton>
                                         </Tooltip>
+                                        {questions.map((q, index) => {
+                                            const icon = {
+                                                singleChoice: <RadioButtonCheckedIcon fontSize="small" />,
+                                                multipleChoice: <CheckBoxIcon fontSize="small" />,
+                                                openEnded: <ShortTextIcon fontSize="small" />,
+                                                matching: <SwapHorizIcon fontSize="small" />,
+                                            }[q.type] || null;
+
+                                            const isInvalid = invalidIndices.includes(index);
+
+                                            return (
+                                                <IconButton
+                                                    size="small"
+                                                    key={index}
+                                                    sx={{
+                                                        width: 40,
+                                                        height: 40,
+                                                        borderRadius: 2,
+                                                        border: isInvalid ? "2px solid red" : "1px solid #ccc",
+                                                        backgroundColor: isInvalid ? "#ffe6e6" : "transparent",
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        justifyContent: "center",
+                                                        alignItems: "center",
+                                                        fontSize: "0.75rem",
+                                                        padding: "4px",
+                                                        marginBottom: "8px",
+                                                    }}
+                                                    onClick={() => {
+                                                        questionRefs[index]?.current?.scrollIntoView({
+                                                            behavior: "smooth",
+                                                            block: "center",
+                                                        });
+                                                    }}
+                                                >
+                                                    <span>{index + 1}</span>
+                                                    {icon}
+                                                </IconButton>
+                                            );
+                                        })}
                                         <Menu
                                             anchorEl={createQuestionAnchorEl}
                                             open={createQuestionMenuOpen}
@@ -273,7 +467,6 @@ const TestPage = () => {
                                         </Menu>
                                     </Box>
                                 </Box>
-
                                 <Divider />
                                 <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                                     <Button
@@ -299,66 +492,206 @@ const TestPage = () => {
                     </Box>
                     :
                     <Box>
-                        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                            <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p: 4, borderRadius: 4 }}>
+                        <Box sx={{ display: "flex", justifyContent: "center", mt: 2, p:2}}>
+                            <Paper
+                                elevation={3}
+                                sx={{
+                                    width: "90%",
+                                    maxWidth: "90%",
+                                    p: 2,
+                                    borderRadius: 4,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    maxHeight:"85vh",
+                                    overflowY:"auto"
+                                }}
+                            >
                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                                    <Typography variant="h5" fontWeight="bold">
-                                        {Test.title}
-                                    </Typography>
-                                    {Test.role!=="member" && (
+                                    <Typography variant="h5" fontWeight="bold">{Test.title}</Typography>
+                                    {Test.role !== "member" && (
                                         <>
                                             <IconButton onClick={handleMenuClick}>
                                                 <MoreVertIcon />
                                             </IconButton>
-                                            <Menu
-                                                anchorEl={anchorEl}
-                                                open={menuOpen}
-                                                onClose={handleMenuClose}
-                                            >
-                                                <MenuItem onClick={()=>{editTest()}}>
-                                                    <EditIcon sx={{marginRight: "5px"}}/>
+                                            <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleMenuClose}>
+                                                <MenuItem onClick={editTest}>
+                                                    <EditIcon sx={{ marginRight: "5px" }} />
                                                     Edit
                                                 </MenuItem>
-                                                <MenuItem onClick={()=>{setConfirmDialogOpen(true);handleMenuClose();}} sx={{color:"red"}}>
-                                                    <DeleteIcon sx={{marginRight:"5px"}}/>
+                                                <MenuItem
+                                                    onClick={() => {
+                                                        setConfirmDialogOpen(true);
+                                                        handleMenuClose();
+                                                    }}
+                                                    sx={{ color: "red" }}
+                                                >
+                                                    <DeleteIcon sx={{ marginRight: "5px" }} />
                                                     Delete
                                                 </MenuItem>
                                             </Menu>
                                         </>
                                     )}
                                 </Stack>
+
                                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                    Open: {dayjs(Test.openDate).format('DD-MM-YYYY HH:mm')} | Due: {dayjs(Test.dueDate).format('DD-MM-YYYY HH:mm')} | Duration: {dateDiffString}
+                                    Open: {dayjs(Test.openDate).format("DD-MM-YYYY HH:mm")} | Due: {dayjs(Test.dueDate).format("DD-MM-YYYY HH:mm")} | Duration: {dateDiffString}
+                                    {Test.timeLimit && ` | Time Limit: ${Test.timeLimit} min`}
                                     {timingInfo && ` | ${timingInfo}`}
                                 </Typography>
+
                                 <Divider sx={{ my: 2 }} />
-                                <Typography variant={"h4"}>
-                                    Test questions
-                                </Typography>
-                                <Divider/>
-                                <Box sx={{
-                                    width:"100%",
-                                    marginTop:"10px",
-                                    maxHeight: '80vh',
-                                    overflowY: "auto",
-                                    display:"flex",
-                                    justifyContent: "flex-start",
-                                }}>
-                                    {
-                                        Test.questions.length>0 &&
-                                        <QuestionList questions={Test.questions} isEdit={false}/>
-                                    }
-                                </Box>
                                 {
-                                    Test.role!=="member"?
-                                        <></>
+                                    Test.role!=="member" &&
+                                    <>
+                                        <Typography variant={"h4"}>Test questions</Typography>
+                                        <Divider />
+                                        <Box sx={{ display: "flex", maxHeight:"65vh", mt: 2, mb:2}}>
+                                            <Box
+                                                sx={{
+                                                    width: "100%",
+                                                    pr: 2,
+                                                    maxHeight:"65vh",
+                                                    overflowY: "auto",
+                                                }}
+                                            >
+                                                {Test.questions.length > 0 && (
+                                                    <QuestionList
+                                                        questions={Test.questions}
+                                                        isEdit={false}
+                                                        questionRefs={questionRefs}
+                                                    />
+                                                )}
+                                            </Box>
+                                            <Box
+                                                sx={{
+                                                    width: 60,
+                                                    borderLeft: "1px solid #eee",
+                                                    pl: 1,
+                                                    overflowY: "auto",
+                                                    maxHeight: "100%",
+                                                }}
+                                            >
+                                                <Stack spacing={1}>
+                                                    {Test.questions.map((q, index) => {
+                                                        const icon = {
+                                                            singleChoice: <RadioButtonCheckedIcon fontSize="small" />,
+                                                            multipleChoice: <CheckBoxIcon fontSize="small" />,
+                                                            openEnded: <ShortTextIcon fontSize="small" />,
+                                                            matching: <SwapHorizIcon fontSize="small" />,
+                                                        }[q.type] || null;
+
+                                                        return (
+                                                            <Tooltip title={`Question ${index + 1}`} key={index} placement="left">
+                                                                <IconButton
+                                                                    size="small"
+                                                                    sx={{
+                                                                        width: 40,
+                                                                        height: 40,
+                                                                        borderRadius: 2,
+                                                                        border: "1px solid #ccc",
+                                                                        backgroundColor: "transparent",
+                                                                        display: "flex",
+                                                                        flexDirection: "column",
+                                                                        justifyContent: "center",
+                                                                        alignItems: "center",
+                                                                        fontSize: "0.75rem",
+                                                                        padding: "4px",
+                                                                    }}
+                                                                    onClick={() => {
+                                                                        questionRefs[index]?.current?.scrollIntoView({
+                                                                            behavior: "smooth",
+                                                                            block: "center",
+                                                                        });
+                                                                    }}
+                                                                >
+                                                                    <span>{index + 1}</span>
+                                                                    {icon}
+                                                                </IconButton>
+                                                            </Tooltip>
+                                                        );
+                                                    })}
+                                                </Stack>
+                                            </Box>
+                                        </Box>
+                                    </>
+                                }
+                                {
+                                    isCompleted?
+                                        <>
+                                            {
+                                                results?.testWithUserAnswers?.length>0 && <TestResults testWithUserAnswers={results.testWithUserAnswers} testInfo={results.testInfo}/>
+                                            }
+                                        </>
                                         :
-                                        <></>
+                                        (Test.isOpen || isStarted) ? <Box sx={{
+                                            width:"100%",
+                                            display:"flex",
+                                            justifyContent:"center"
+                                        }}>
+                                            {
+                                                isStarted?
+                                                    <Button color={"primary"} variant={"outlined"} onClick={()=>navigate(PASS_TEST_PAGE.replace(":id", id).replace(":testId", testId))}>Resume</Button>
+                                                    :
+                                                    <Button color={"primary"} variant={"outlined"} onClick={()=>navigate(PASS_TEST_PAGE.replace(":id", id).replace(":testId", testId))}>Start</Button>
+                                            }
+                                        </Box>
+                                            :
+                                            <Box
+                                                sx={{
+                                                    mt: 3,
+                                                    mb: 2,
+                                                    px: 2,
+                                                    py: 3,
+                                                    backgroundColor: '#f5f5f5',
+                                                    border: '1px solid #ccc',
+                                                    borderRadius: '8px',
+                                                    textAlign: 'center'
+                                                }}
+                                            >
+                                                <Typography variant="h6" gutterBottom color="text.secondary">
+                                                    <LockIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                                                    {dayjs().isBefore(dayjs(Test.openDate))
+                                                        ? 'This test is not open yet'
+                                                        : 'This test is already closed'}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {dayjs().isBefore(dayjs(Test.openDate))
+                                                        ? `The test will be available from: `
+                                                        : `The test was available until: `}
+                                                    <strong>
+                                                        {dayjs().isBefore(dayjs(Test.openDate))
+                                                            ? dayjs(Test.openDate).format('DD-MM-YYYY HH:mm')
+                                                            : dayjs(Test.dueDate).format('DD-MM-YYYY HH:mm')}
+                                                    </strong>
+                                                </Typography>
+                                            </Box>
                                 }
 
+                                {
+                                    Test.role!=="member" &&
+                                    <>
+                                        <Divider/>
+                                        <Typography variant={"h5"}>Users answers</Typography>
+                                        {
+                                            completeTests?.length>0 ?
+                                            completeTests.map(test=>(
+                                                <CompleteTestCard test={test}/>
+                                            ))
+                                                :
+                                                <Typography variant={"h7"} color={"textSecondary"}>User answers will be placed here</Typography>
+                                        }
+                                    </>
+                                }
                             </Paper>
                         </Box>
-                        <ConfirmDialog open={confirmDialogOpen} onClose={()=>setConfirmDialogOpen(false)} title={"Delete Test"} message={"Are you sure want to delete Test?"} onConfirm={()=>{deleteTest()}}/>
+
+                        <ConfirmDialog
+                            open={confirmDialogOpen}
+                            onClose={() => setConfirmDialogOpen(false)}
+                            title={"Delete Test"}
+                            message={"Are you sure want to delete Test?"}
+                            onConfirm={deleteTest}
+                        />
                     </Box>
             }
         </Box>

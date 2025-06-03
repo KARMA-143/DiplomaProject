@@ -4,6 +4,7 @@ const commentService = require("./commentService");
 const fileService = require("./fileService");
 const userService = require("./userService");
 const sequelize = require("../db");
+const mailService = require("./mailService");
 
 class postService {
     async getCoursePosts(courseId){
@@ -29,6 +30,7 @@ class postService {
             addedFiles = newPostPlainObject["files"];
             await t.commit();
             await fileService.moveFilesFromTempToStatic(newPostPlainObject["files"]);
+            await mailService.createPostInform(newPostPlainObject);
             return new PostDTO(newPostPlainObject);
         }
         catch (err){

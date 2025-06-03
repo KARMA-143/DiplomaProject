@@ -9,7 +9,6 @@ import {
     IconButton,
     MenuItem,
     Toolbar,
-    Typography,
     Menu
 } from "@mui/material";
 import DrawerList from "./DrawerList";
@@ -24,8 +23,10 @@ import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import Loading from "./Loading";
 import {observer} from "mobx-react-lite";
+import HtmlTooltip from "./HtmlTooltip";
+import EditUserModal from "./EditUserModal";
 
-const NavBar = () => {
+const NavBar = ({TitleComponent}) => {
     const [anchorEl, setAnchorEl] = useState(null);
     const menuOpen=Boolean(anchorEl);
     const {User, SnackbarStore}=useContext(Context);
@@ -34,6 +35,7 @@ const NavBar = () => {
     const [openCreateCourseModal, setOpenCreateCourseModal] = useState(false);
     const [openJoinCourseDialog, setOpenJoinCourseDialog] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [editOpen, setEditOpen] = useState(false);
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -72,52 +74,79 @@ const NavBar = () => {
             <Loading open={loading}/>
             <Box sx={{ flexGrow: 1 }}>
                 <AppBar position="static">
-                    <Toolbar>
-                        <IconButton
-                            size="large"
-                            edge="start"
-                            color="inherit"
-                            aria-label="menu"
-                            sx={{ mr: 2 }}
-                            onClick={() => setOpen(true)}
-                        >
-                            <ListRoundedIcon/>
-                        </IconButton>
-                        <Typography onClick={()=>{navigate(MAIN_ROUTE)}} variant="h6" component="div" sx={{ flexGrow: 1 }}>
-                            Workspace
-                        </Typography>
-                        {
-                            document.location.href===APP_URL+MAIN_ROUTE &&
-                            <>
-                                <IconButton aria-label="create/join course" size="large" onClick={handleClick} aria-controls={open ? 'basic-menu' : undefined}
-                                            aria-haspopup="true"
-                                            aria-expanded={open ? 'true' : undefined}>
-                                    <AddIcon fontSize="inherit"/>
-                                </IconButton>
-                                <Menu
-                                    id="basic-menu"
-                                    anchorEl={anchorEl}
-                                    open={menuOpen}
-                                    onClose={handleClose}
-                                    MenuListProps={{
-                                        'aria-labelledby': 'basic-button',
-                                    }}
-                                >
-                                    <MenuItem onClick={openCourseModal} sx={{display: 'flex', alignItems: 'center', justifyContent: 'flex-start'}}>
-                                        <CreateNewFolderIcon sx={{marginRight: "5px"}}/>
-                                        Create own course
-                                    </MenuItem>
-                                    <MenuItem onClick={openJoinCourseModal} sx={{display: 'flex', alignItems: 'center', justifyContent: 'flex-start'}}>
-                                        <GroupAddIcon sx={{marginRight: "5px"}}/>
-                                        Join course with code
-                                    </MenuItem>
-                                </Menu>
-                                <CreateCourseDialog open={openCreateCourseModal} setOpen={setOpenCreateCourseModal} />
-                                <JoinCourseDialog open={openJoinCourseDialog} setOpen={setOpenJoinCourseDialog}/>
-                            </>
-                        }
-                        <Button color="inherit" onClick={logOut}>Log out</Button>
-                        <Avatar alt="Remy Sharp" src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg" />
+                    <Toolbar sx={{
+                        display:"flex",
+                        justifyContent:"space-between",
+                        alignItems:"center"
+                    }}>
+                        <Box sx={{
+                            display:"flex",
+                            alignItems:"center"
+                        }}>
+                            <IconButton
+                                size="large"
+                                edge="start"
+                                color="inherit"
+                                aria-label="menu"
+                                sx={{ mr: 2 }}
+                                onClick={() => setOpen(true)}
+                            >
+                                <ListRoundedIcon/>
+                            </IconButton>
+                            {TitleComponent}
+                        </Box>
+                        <Box sx={{
+                            display:"flex",
+                            alignItems:"center"
+                        }}>
+                            {
+                                document.location.href===APP_URL+MAIN_ROUTE &&
+                                <>
+                                    <IconButton aria-label="create/join course" size="large" onClick={handleClick} aria-controls={open ? 'basic-menu' : undefined}
+                                                aria-haspopup="true"
+                                                aria-expanded={open ? 'true' : undefined}>
+                                        <AddIcon fontSize="inherit"/>
+                                    </IconButton>
+                                    <Menu
+                                        id="basic-menu"
+                                        anchorEl={anchorEl}
+                                        open={menuOpen}
+                                        onClose={handleClose}
+                                        MenuListProps={{
+                                            'aria-labelledby': 'basic-button',
+                                        }}
+                                    >
+                                        <MenuItem onClick={openCourseModal} sx={{display: 'flex', alignItems: 'center', justifyContent: 'flex-start'}}>
+                                            <CreateNewFolderIcon sx={{marginRight: "5px"}}/>
+                                            Create own course
+                                        </MenuItem>
+                                        <MenuItem onClick={openJoinCourseModal} sx={{display: 'flex', alignItems: 'center', justifyContent: 'flex-start'}}>
+                                            <GroupAddIcon sx={{marginRight: "5px"}}/>
+                                            Join course with code
+                                        </MenuItem>
+                                    </Menu>
+                                    <CreateCourseDialog open={openCreateCourseModal} setOpen={setOpenCreateCourseModal} />
+                                    <JoinCourseDialog open={openJoinCourseDialog} setOpen={setOpenJoinCourseDialog}/>
+                                </>
+                            }
+                            <Button color="inherit" onClick={logOut}>Log out</Button>
+                            <HtmlTooltip
+                                title={
+                                    <React.Fragment>
+                                        <div><strong>Name:</strong> {User.name}</div>
+                                        <div><strong>Email:</strong> {User.email}</div>
+                                    </React.Fragment>
+                                }
+                            >
+                                <Avatar
+                                    alt={User.name}
+                                    src="https://t3.ftcdn.net/jpg/03/94/89/90/360_F_394899054_4TMgw6eiMYUfozaZU3Kgr5e0LdH4ZrsU.jpg"
+                                    sx={{ cursor: 'pointer' }}
+                                    onClick={()=>{setEditOpen(true)}}
+                                />
+                            </HtmlTooltip>
+                            <EditUserModal open={editOpen} onClose={() => setEditOpen(false)} />
+                        </Box>
                     </Toolbar>
                 </AppBar>
             </Box>

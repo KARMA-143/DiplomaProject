@@ -33,16 +33,17 @@ class commentService {
     }
 
     async deleteComment(commentId, user, role){
+        console.log(commentId, user, role);
         const t = await sequelize.transaction();
         try{
             if(role==="member"){
-                const comment = await Comment.findOne({where:{id: commentId, authorId:userId}})
+                const comment = await Comment.findOne({where:{id: commentId, authorId:user.id}})
                 if(!comment){
                     throw new APIError(403, "access denied");
                 }
             }
-
             await Comment.destroy({where:{id: commentId}, transaction: t});
+            await t.commit();
         }
         catch (err){
             await t.rollback();

@@ -56,83 +56,86 @@ import ImageResize from 'tiptap-extension-resize-image';
 import DataObjectIcon from '@mui/icons-material/DataObject';
 import Placeholder from '@tiptap/extension-placeholder'
 
+const EditorActionButton = ({
+                                title,
+                                icon,
+                                command,
+                                isActive = () => false,
+                                canExecute = () => true,
+                            }) => (
+    <Tooltip title={title}>
+        <Box component="span">
+            <IconButton
+                onMouseDown={(e) => {
+                    e.preventDefault();
+                    command();
+                }}
+                disabled={!canExecute()}
+                color={isActive() ? 'primary' : 'default'}
+            >
+                {icon}
+            </IconButton>
+        </Box>
+    </Tooltip>
+);
+
 const SimpleMenuBar = ({ editor }) => {
     if (!editor) return null;
 
     return (
         <ButtonGroup variant="outlined" size="small">
-        <Tooltip title="Bold">
-            <Box component={"span"}>
-                <IconButton
-                    onClick={() => editor.chain().focus().toggleBold().run()}
-                    disabled={!editor.can().toggleBold()}
-                    color={editor.isActive('bold') ? 'primary' : 'default'}>
-                    <BoldIcon />
-                </IconButton>
-            </Box>
-        </Tooltip>
-        <Tooltip title="Italic">
-            <Box component={"span"}>
-                <IconButton
-                    onClick={() => editor.chain().focus().toggleItalic().run()}
-                    disabled={!editor.can().toggleItalic()}
-                    color={editor.isActive('italic') ? 'primary' : 'default'}>
-                    <ItalicIcon />
-                </IconButton>
-            </Box>
-        </Tooltip>
-        <Tooltip title="Strikethrough">
-            <Box component={"span"}>
-                <IconButton
-                    onClick={() => editor.chain().focus().toggleStrike().run()}
-                    disabled={!editor.can().toggleStrike()}
-                    color={editor.isActive('strike') ? 'primary' : 'default'}>
-                    <StrikeIcon />
-                </IconButton>
-            </Box>
-        </Tooltip>
-        <Tooltip title="Underline">
-            <Box component={"span"}>
-                <IconButton
-                    onClick={() => editor.chain().focus().toggleUnderline().run()}
-                    disabled={!editor.can().toggleUnderline()}
-                    color={editor.isActive('underline') ? 'primary' : 'default'}>
-                    <FormatUnderlinedIcon />
-                </IconButton>
-            </Box>
-        </Tooltip>
-        <Tooltip title="Subscript">
-            <Box component={"span"}>
-                <IconButton
-                    onClick={() => editor.chain().focus().toggleSubscript().run()}
-                    disabled={!editor.can().toggleSubscript()}
-                    color={editor.isActive('subscript') ? 'primary' : 'default'}>
-                    <SubscriptIcon />
-                </IconButton>
-            </Box>
-        </Tooltip>
-        <Tooltip title="Superscript">
-            <Box component={"span"}>
-                <IconButton
-                    onClick={() => editor.chain().focus().toggleSuperscript().run()}
-                    disabled={!editor.can().toggleSuperscript()}
-                    color={editor.isActive('superscript') ? 'primary' : 'default'}>
-                    <SuperscriptIcon />
-                </IconButton>
-            </Box>
-        </Tooltip>
-        <Tooltip title={"Add link"}>
-            <Box component={"span"}>
-                <IconButton
-                    onClick={() => editor.chain().focus().setLink({ href: prompt('Enter the URL') }).run()}
-                    color={editor.isActive('link') ? 'primary' : 'default'}
-                    disabled={!editor.can().setLink({href: ""})}
-                >
-                    <LinkIcon />
-                </IconButton>
-            </Box>
-        </Tooltip>
-        <AddListDropDownMenu editor={editor}/>
+            <EditorActionButton
+                title="Bold"
+                icon={<BoldIcon />}
+                command={() => editor.chain().focus().toggleBold().run()}
+                isActive={() => editor.isActive('bold')}
+                canExecute={() => editor.can().toggleBold()}
+            />
+            <EditorActionButton
+                title="Italic"
+                icon={<ItalicIcon />}
+                command={() => editor.chain().focus().toggleItalic().run()}
+                isActive={() => editor.isActive('italic')}
+                canExecute={() => editor.can().toggleItalic()}
+            />
+            <EditorActionButton
+                title="Strikethrough"
+                icon={<StrikeIcon />}
+                command={() => editor.chain().focus().toggleStrike().run()}
+                isActive={() => editor.isActive('strike')}
+                canExecute={() => editor.can().toggleStrike()}
+            />
+            <EditorActionButton
+                title="Underline"
+                icon={<FormatUnderlinedIcon />}
+                command={() => editor.chain().focus().toggleUnderline().run()}
+                isActive={() => editor.isActive('underline')}
+                canExecute={() => editor.can().toggleUnderline()}
+            />
+            <EditorActionButton
+                title="Subscript"
+                icon={<SubscriptIcon />}
+                command={() => editor.chain().focus().toggleSubscript().run()}
+                isActive={() => editor.isActive('subscript')}
+                canExecute={() => editor.can().toggleSubscript()}
+            />
+            <EditorActionButton
+                title="Superscript"
+                icon={<SuperscriptIcon />}
+                command={() => editor.chain().focus().toggleSuperscript().run()}
+                isActive={() => editor.isActive('superscript')}
+                canExecute={() => editor.can().toggleSuperscript()}
+            />
+            <EditorActionButton
+                title="Add link"
+                icon={<LinkIcon />}
+                command={() => {
+                    const url = prompt('Enter the URL');
+                    if (url) editor.chain().focus().setLink({ href: url }).run();
+                }}
+                isActive={() => editor.isActive('link')}
+                canExecute={() => editor.can().setLink({ href: '' })}
+            />
     </ButtonGroup>
     );
 };
@@ -512,15 +515,15 @@ const AddListDropDownMenu=({editor})=>{
                         onClick={handleOpen}
                         disabled={isMenuDisabled}
                     >
-                    <Badge
-                        badgeContent={<AddIcon fontSize={"small"} color={"primary"} sx={{background: "white", borderRadius: "50%"}}/>}
-                        color="default"
-                        overlap="circular"
-                        anchorOrigin={{vertical: 'top', horizontal: 'right'}}
-                    >
-                        <ListIcon/>
-                    </Badge>
-                </IconButton>
+                        <Badge
+                            badgeContent={<AddIcon fontSize={"small"} color={"primary"} sx={{background: "white", borderRadius: "50%"}}/>}
+                            color="default"
+                            overlap="circular"
+                            anchorOrigin={{vertical: 'top', horizontal: 'right'}}
+                        >
+                            <ListIcon/>
+                        </Badge>
+                    </IconButton>
                 </Box>
             </Tooltip>
             <Menu
@@ -656,6 +659,7 @@ const ExtendedMenuBar = ({editor, images, setImages}) => {
     return (
         <Box sx={{display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2}}>
             <SimpleMenuBar editor={editor}/>
+            <AddListDropDownMenu editor={editor}/>
             <SetFontDropDownMenu editor={editor}/>
             <ColorPickerButton
                 editor={editor}
@@ -922,7 +926,7 @@ const TextEditor = ({value, onChange, type, images, setImages, placeholder="", v
                         </Box>
                         :
                         editor.isFocused &&
-                        <Box sx={{ mb: 1 }}>
+                        <Box sx={{ mb: 1,  width:"100%", display:"flex", alignItems:"flex-start"  }}>
                             <SimpleMenuBar editor={editor}/>
                         </Box>
                     :

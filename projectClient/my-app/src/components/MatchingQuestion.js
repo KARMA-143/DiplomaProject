@@ -31,7 +31,7 @@ const SelectItem = ({ answers, selectedAnswer, setSelectedAnswer }) => {
 };
 
 
-const MatchingQuestion = ({question, deleteQuestion, isEdit}) => {
+const MatchingQuestion = ({question, deleteQuestion, isEdit, index}) => {
     const [questionText, setQuestionText] = useState(question.text || "");
     const [answers, setAnswers] = useState(question.answers || []);
     const [options, setOptions]=useState(question.correctAnswer || [{option:"", answer:""},{option:"", answer:""}]);
@@ -66,6 +66,13 @@ const MatchingQuestion = ({question, deleteQuestion, isEdit}) => {
             boxShadow: 2,
             mb: 3
         }}>
+            <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                sx={{ mb: 1, fontWeight: 'bold' }}
+            >
+                Question {index + 1}
+            </Typography>
             {
                 isEdit?
                     <>

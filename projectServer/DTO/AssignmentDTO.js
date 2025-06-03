@@ -4,6 +4,7 @@ class AssignmentDTO{
         this.title = assignment.title;
         this.openDate = assignment.openDate;
         this.dueDate = assignment.dueDate;
+        this.type = assignment.type;
     }
 }
 

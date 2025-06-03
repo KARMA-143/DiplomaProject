@@ -1,7 +1,7 @@
-import React, {useRef, useState, useMemo, useContext} from 'react';
+import React, {useRef, useState, useMemo, useContext, useEffect} from 'react';
 import {
     Box, Button, TextField, Typography, Paper,
-    Stack, Divider, IconButton
+    Stack, Divider, IconButton, Breadcrumbs, Link
 } from "@mui/material";
 import NavBar from "../components/NavBar";
 import { DateTimePicker, LocalizationProvider } from "@mui/x-date-pickers";
@@ -15,13 +15,13 @@ import {createNewTask} from "../http/assignmentAPI";
 import {useNavigate, useParams} from "react-router-dom";
 import Loading from "../components/Loading";
 import {Context} from "../index";
-import {TASK_PAGE_ROUTE} from "../utils/consts";
+import {COURSE_PAGE_ROUTE, TASK_PAGE_ROUTE} from "../utils/consts";
+import {getCourseById} from "../http/courseAPI";
 
 dayjs.extend(duration);
 
 const TaskCreatePage = () => {
     const [openDate, setOpenDate] = useState(null);
-    const {SnackbarStore} = useContext(Context);
     const [dueDate, setDueDate] = useState(null);
     const [title, setTitle] = useState("");
     const [taskText, setTaskText] = useState("");
@@ -30,32 +30,72 @@ const TaskCreatePage = () => {
     const [drag, setDrag] = useState(false);
     const fileInput = useRef(null);
     const {id} = useParams();
-    const [loading, setLoading] = useState(false);
-    const navigate=useNavigate();
+    const navigate = useNavigate();
+    const {SnackbarStore} = useContext(Context);
+    const [loading, setLoading] = useState(true);
+    const [courseName, setCourseName] = useState("");
 
-    const createTask=()=>{
+    useEffect(() => {
+        getCourseById(id).then(r=>{
+             setCourseName(r.data.name);
+        })
+            .catch((err)=>{
+                navigate(-1);
+            })
+            .finally(()=>{
+                setLoading(false);
+            })
+    }, [id, navigate]);
+
+    const [errors, setErrors] = useState({
+        title: false,
+        openDate: false,
+        dueDate: false,
+        taskText: false
+    });
+
+    const validateFields = () => {
+        const newErrors = {
+            title: title.trim() === "",
+            openDate: !openDate,
+            dueDate: !dueDate,
+            taskText: taskText.trim() === "",
+        };
+
+        if (openDate && dueDate) {
+            const isInvalid = dayjs(openDate).isAfter(dayjs(dueDate));
+            newErrors.openDate = newErrors.openDate || isInvalid;
+            newErrors.dueDate = newErrors.dueDate || isInvalid;
+        }
+
+        setErrors(newErrors);
+        return !Object.values(newErrors).some(Boolean);
+    };
+
+    const createTask = () => {
+        if (!validateFields()) return;
+
         setLoading(true);
         const data = new FormData();
         taskFiles.forEach((file) => data.append('files', file));
         images.forEach((imgObj) => {
             data.append('images', imgObj.file);
-            data.append(`imagesUrls`, imgObj.url);
+            data.append('imagesUrls', imgObj.url);
         });
         data.append("text", taskText);
         data.append("title", title);
         data.append("openDate", openDate);
         data.append("dueDate", dueDate);
+
         createNewTask(id, data).then(res => {
             SnackbarStore.show("Task was created", "success");
-            navigate(TASK_PAGE_ROUTE.replace(":id", id).replace(":taskId", res.id));
-        })
-            .catch(err=>{
-                SnackbarStore.show(err.response.data.message, "error");
-            })
-            .finally(()=>{
-                setLoading(false);
-            })
-    }
+            navigate(TASK_PAGE_ROUTE.replace(":id", id).replace(":taskId", res.id),{replace:true});
+        }).catch(err => {
+            SnackbarStore.show(err.response?.data?.message || "Error", "error");
+        }).finally(() => {
+            setLoading(false);
+        });
+    };
 
     const openFileInput = () => fileInput.current.click();
 
@@ -97,15 +137,27 @@ const TaskCreatePage = () => {
         return '';
     }, [openDate, dueDate, dateError]);
 
-    if(loading){
-        return <Loading open={loading}/>
+    if (loading) {
+        return <Loading open={loading} />;
     }
 
     return (
         <Box>
-            <NavBar />
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p: 4, borderRadius: 4 }}>
+            <NavBar TitleComponent={
+                <Breadcrumbs aria-label="breadcrumb" sx={{color:"white"}}>
+                    <Link
+                        underline="hover"
+                        variant={"h6"}
+                        sx={{color:"white"}}
+                        href={COURSE_PAGE_ROUTE.replace(":id", id).replace(":tab","assignments")}
+                    >
+                        {courseName}
+                    </Link>
+                    <Typography variant={"h6"} content={"div"}>Create task</Typography>
+                </Breadcrumbs>
+            }/>
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2, overflow: "hidden", p: 2 }}>
+                <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p: 2, borderRadius: 4, maxHeight: "85vh", overflowY: "auto" }}>
                     <Typography variant="h5" fontWeight="bold" gutterBottom>
                         Create New Task
                     </Typography>
@@ -118,6 +170,8 @@ const TaskCreatePage = () => {
                             onChange={(e) => setTitle(e.target.value)}
                             variant="outlined"
                             label="Task Title"
+                            error={errors.title}
+                            helperText={errors.title ? "Title is required" : ""}
                         />
 
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -131,9 +185,9 @@ const TaskCreatePage = () => {
                                     slotProps={{
                                         textField: {
                                             fullWidth: true,
-                                            error: dateError,
+                                            error: errors.openDate,
                                             size: "small",
-                                            helperText: dateError ? "Open time must be before close time" : ""
+                                            helperText: errors.openDate ? "Open time is required and must be before close time" : ""
                                         }
                                     }}
                                 />
@@ -146,16 +200,16 @@ const TaskCreatePage = () => {
                                     slotProps={{
                                         textField: {
                                             fullWidth: true,
-                                            error: dateError,
+                                            error: errors.dueDate,
                                             size: "small",
-                                            helperText: dateError ? "Close time must be after open time" : ""
+                                            helperText: errors.dueDate ? "Close time is required and must be after open time" : ""
                                         }
                                     }}
                                 />
                             </Stack>
                         </LocalizationProvider>
 
-                        {dateDiffString && (
+                        {dateDiffString && !errors.openDate && !errors.dueDate && (
                             <Typography variant="body2" color="text.secondary" textAlign="right">
                                 Duration: {dateDiffString}
                             </Typography>
@@ -175,6 +229,11 @@ const TaskCreatePage = () => {
                                 minHeight="60vh"
                                 maxHeight="60vh"
                             />
+                            {errors.taskText && (
+                                <Typography variant="caption" color="error">
+                                    Task description is required
+                                </Typography>
+                            )}
                         </Box>
 
                         <Divider />
@@ -228,8 +287,8 @@ const TaskCreatePage = () => {
                         <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                             <Button
                                 variant="contained"
-                                disabled={dateError}
                                 onClick={createTask}
+                                disabled={loading}
                             >
                                 Create Task
                             </Button>

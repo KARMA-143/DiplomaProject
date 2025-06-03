@@ -10,7 +10,7 @@ export const deletePostComment = async (courseId, commentId) => {
     return status;
 }
 
-export const updatePostComment = async (courseId, commentId, text) => {
+export const updateComment = async (courseId, commentId, text) => {
     const {data} = await $authHost.put(`/comment/${courseId}/${commentId}`, {"text":text}, {headers: {"Content-Type":"application/json"}});
     return data;
 }

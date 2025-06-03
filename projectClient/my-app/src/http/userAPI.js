@@ -29,3 +29,8 @@ export const fetchUserWithEmail=async(pattern, id)=>{
     const {data}=await $authHost.get(`/user/${id}/${pattern}`);
     return data;
 }
+
+export const changeUserName=async(name)=>{
+    const {data}=await $authHost.put(`/user/changeName`, {name:name});
+    return data;
+}

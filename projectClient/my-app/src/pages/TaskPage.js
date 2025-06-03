@@ -1,6 +1,6 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {
-    Box, Typography, Paper, Stack, Divider, IconButton, Menu, MenuItem, TextField, Button
+    Box, Typography, Paper, Stack, Divider, IconButton, Menu, MenuItem, TextField, Button, Link, Breadcrumbs
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import dayjs from "dayjs";
@@ -8,7 +8,7 @@ import duration from "dayjs/plugin/duration";
 import FileList from "../components/FileList";
 import {useNavigate, useParams} from "react-router-dom";
 import Loading from "../components/Loading";
-import {deleteCourseTask, editCourseTask, getTask} from "../http/assignmentAPI";
+import {deleteCourseTask, editCourseTask, getCompleteTasks, getTask, getUserTask} from "../http/assignmentAPI";
 import {Context} from "../index";
 import {observer} from "mobx-react-lite";
 import EditIcon from "@mui/icons-material/Edit";
@@ -20,6 +20,9 @@ import {DateTimePicker, LocalizationProvider} from "@mui/x-date-pickers";
 import {AdapterDayjs} from "@mui/x-date-pickers/AdapterDayjs";
 import TextEditor from "../components/TextEditor";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
+import UserTask from "../components/UserTask";
+import LockIcon from '@mui/icons-material/Lock';
+import SubmittedUserTaskCard from "../components/SubmittedUserTaskCard";
 
 dayjs.extend(duration);
 
@@ -41,10 +44,28 @@ const TaskPage = () => {
     const [drag, setDrag] = useState(false);
     const fileInput = useRef(null);
     const [existingImages, setExistingImages] = useState([]);
+    const [usersTasks, setUsersTasks]=useState([]);
+    const [currentUserTask, setCurrentUserTask] = useState(null);
 
     useEffect(() => {
         getTask(id, taskId).then(res=>{
             Task.setTask(res);
+            if(Task.role==="member"){
+                getUserTask(id, taskId).then(res=>{
+                    setCurrentUserTask(res);
+                })
+                    .catch(err=>{
+                        SnackbarStore.show(err.response.data.message, "error");
+                    })
+            }
+            else{
+                getCompleteTasks(id, taskId).then(res=>{
+                    setUsersTasks(res);
+                })
+                    .catch(err=>{
+                        SnackbarStore.show(err.response.data.message, "error");
+                    })
+            }
         })
             .catch(err=>{
                 SnackbarStore.show(err.response.data.message, "error");
@@ -53,11 +74,12 @@ const TaskPage = () => {
             .finally(()=>{
                 setLoading(false);
             })
-    }, [id, taskId, SnackbarStore, Task]);
+    }, [id, taskId, SnackbarStore, Task, navigate]);
 
     const handleMenuClick = (event) => {
         setAnchorEl(event.currentTarget);
     };
+
     const handleMenuClose = () => {
         setAnchorEl(null);
     };
@@ -79,8 +101,8 @@ const TaskPage = () => {
         if (Task.openDate && Task.dueDate) {
             const diffMs = dayjs(Task.dueDate).diff(dayjs(Task.openDate));
             const dur = dayjs.duration(diffMs);
-            const days = dur.days();
-            const hours = dur.hours();
+            const days = Math.floor(dur.asDays());
+            const hours = Math.floor(dur.asHours() % 24);
             return `${days} day${days !== 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
         }
         return '';
@@ -115,23 +137,33 @@ const TaskPage = () => {
         setDrag(false);
     };
 
-    const dateError = useMemo(() => {
-        if (openDate && dueDate) {
-            return dayjs(openDate).isAfter(dayjs(dueDate));
-        }
-        return false;
+    const isOpenDateInvalid = useMemo(() => {
+        return !openDate;
+    }, [openDate]);
+
+    const isDateOrderInvalid = useMemo(() => {
+        return openDate && dueDate && dayjs(openDate).isAfter(dayjs(dueDate));
     }, [openDate, dueDate]);
 
+    const isFormInvalid = useMemo(() => {
+        return (
+            !title.trim() ||
+            !taskText.trim() ||
+            taskFiles.length === 0 ||
+            isDateOrderInvalid
+        );
+    }, [title, taskText, taskFiles, isDateOrderInvalid]);
+
     const editDateDiffString = useMemo(() => {
-        if (openDate && dueDate && !dateError) {
+        if (openDate && dueDate && !isDateOrderInvalid) {
             const diffMs = dayjs(dueDate).diff(dayjs(openDate));
             const dur = dayjs.duration(diffMs);
-            const days = dur.days();
-            const hours = dur.hours();
+            const days = Math.floor(dur.asDays());
+            const hours = Math.floor(dur.asHours() % 24);
             return `${days} day${days !== 1 ? 's' : ''} ${hours} hour${hours !== 1 ? 's' : ''}`;
         }
         return '';
-    }, [openDate, dueDate, dateError]);
+    }, [openDate, dueDate, isDateOrderInvalid]);
 
     const openFileInput = () => fileInput.current.click();
 
@@ -151,7 +183,36 @@ const TaskPage = () => {
         setLoading(false);
     }
 
+    const [errors, setErrors] = useState({
+        title: false,
+        openDate: false,
+        dueDate: false,
+        taskText: false,
+        userTaskText: false,
+        userFilesText: false,
+    });
+
+    const validateFields = () => {
+        const newErrors = {
+            title: title.trim() === "",
+            openDate: !openDate,
+            dueDate: !dueDate,
+            taskText: taskText.trim() === "",
+        };
+
+        if (openDate && dueDate) {
+            const isInvalid = dayjs(openDate).isAfter(dayjs(dueDate));
+            newErrors.openDate = newErrors.openDate || isInvalid;
+            newErrors.dueDate = newErrors.dueDate || isInvalid;
+        }
+
+        setErrors(newErrors);
+        return !Object.values(newErrors).some(Boolean);
+    };
+
     const sendRequest=()=>{
+        validateFields();
+
         setLoading(true);
         const data = new FormData();
         const newFiles = taskFiles.filter(file => file.id === undefined);
@@ -177,7 +238,6 @@ const TaskPage = () => {
                 SnackbarStore.show(error.response.data.message, "error");
             })
             .finally(() => {
-
                 setLoading(false);
             });
     }
@@ -188,12 +248,24 @@ const TaskPage = () => {
 
     return (
         <Box>
-            <NavBar />
+            <NavBar TitleComponent={
+                <Breadcrumbs aria-label="breadcrumb" sx={{color:"white"}}>
+                    <Link
+                    underline="hover"
+                    variant={"h6"}
+                    sx={{color:"white"}}
+                    href={COURSE_PAGE_ROUTE.replace(":id", id).replace(":tab","assignments")}
+                    >
+                    {Task.courseName}
+                    </Link>
+                    <Typography variant={"h6"} content={"div"}>{Task.title}</Typography>
+                </Breadcrumbs>
+                }/>
             {
-                isEdit?
-                    <Box>
-                        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                            <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p: 4, borderRadius: 4 }}>
+                isEdit ?
+                    <Box sx={{p: 2}}>
+                        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                            <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p:2, borderRadius: 4, overflowY:'auto', maxHeight:"85vh" }}>
                                 <Typography variant="h5" fontWeight="bold" gutterBottom>
                                     Edit Task
                                 </Typography>
@@ -202,6 +274,8 @@ const TaskPage = () => {
                                         fullWidth
                                         value={title}
                                         size="small"
+                                        error={errors.taskText}
+                                        helperText={ errors.taskText && "Fill text field"}
                                         onChange={(e) => setTitle(e.target.value)}
                                         variant="outlined"
                                         label="Task Title"
@@ -218,8 +292,12 @@ const TaskPage = () => {
                                                     textField: {
                                                         fullWidth: true,
                                                         size: "small",
-                                                        error: dateError,
-                                                        helperText: dateError ? "Open time must be before close time" : ""
+                                                        error: isOpenDateInvalid || isDateOrderInvalid || errors.openDate,
+                                                        helperText: isOpenDateInvalid || errors.openDate
+                                                            ? "Open time must be not empty"
+                                                            : isDateOrderInvalid
+                                                                ? "Open time must be before close time"
+                                                                : ""
                                                     }
                                                 }}
                                             />
@@ -233,8 +311,8 @@ const TaskPage = () => {
                                                     textField: {
                                                         fullWidth: true,
                                                         size: "small",
-                                                        error: dateError,
-                                                        helperText: dateError ? "Close time must be after open time" : ""
+                                                        error: isDateOrderInvalid || errors.dueDate,
+                                                        helperText: isDateOrderInvalid || errors.dueDate? "Close time must be after open time" : ""
                                                     }
                                                 }}
                                             />
@@ -263,6 +341,11 @@ const TaskPage = () => {
                                             serverImages={existingImages}
                                             setServerImages={setExistingImages}
                                         />
+                                        {errors.taskText && (
+                                            <Typography variant="caption" color="error">
+                                                Task description is required
+                                            </Typography>
+                                        )}
                                     </Box>
                                     <Divider />
                                     <Box>
@@ -312,15 +395,13 @@ const TaskPage = () => {
                                             variant="contained"
                                             color={"error"}
                                             onClick={()=>setIsEdit(false)}
-                                            sx={{
-                                                marginRight:"5px"
-                                            }}
+                                            sx={{ marginRight:"5px" }}
                                         >
                                             Cancel
                                         </Button>
                                         <Button
                                             variant="contained"
-                                            disabled={dateError}
+                                            disabled={isFormInvalid}
                                             onClick={sendRequest}
                                         >
                                             Save task
@@ -331,9 +412,9 @@ const TaskPage = () => {
                         </Box>
                     </Box>
                     :
-                    <Box>
-                        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-                            <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", p: 4, borderRadius: 4 }}>
+                    <Box sx={{p: 2}}>
+                        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                            <Paper elevation={3} sx={{ width: "90%", maxWidth: "90%", maxHeight:"85vh", p: 4, borderRadius: 4, overflowY:"auto" }}>
                                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                                     <Typography variant="h5" fontWeight="bold">
                                         {Task.title}
@@ -365,32 +446,71 @@ const TaskPage = () => {
                                     Open: {dayjs(Task.openDate).format('DD-MM-YYYY HH:mm')} | Due: {dayjs(Task.dueDate).format('DD-MM-YYYY HH:mm')} | Duration: {dateDiffString}
                                     {timingInfo && ` | ${timingInfo}`}
                                 </Typography>
-
-                                <Divider sx={{ my: 2 }} />
-
                                 {
-                                    Task.text &&
-                                    <Box
-                                        sx={{ marginLeft: "10px", padding: "5px", wordWrap: "break-word", wordBreak: "break-all" }}
-                                        dangerouslySetInnerHTML={{ __html: Task.text }}
-                                    />
+                                    ((Task.role === "member" && Task.isOpen) || Task.role !== "member") ? (
+                                        <>
+                                            <Divider sx={{ my: 2 }} />
+
+                                            {Task.text && (
+                                                <Box
+                                                    sx={{ marginLeft: "10px", padding: "5px", wordWrap: "break-word", wordBreak: "break-all" }}
+                                                    dangerouslySetInnerHTML={{ __html: Task.text }}
+                                                />
+                                            )}
+
+                                            {Task.files?.length > 0 && (
+                                                <Box sx={{ mt: 3 }}>
+                                                    <Typography variant="subtitle1" gutterBottom>
+                                                        Attached Files
+                                                    </Typography>
+                                                    <FileList files={Task.files} isCreate={false} />
+                                                </Box>
+                                            )}
+
+                                            <Box sx={{ m: 2 }}>
+                                                <Divider />
+                                                {Task.role === "member" ? (
+                                                    <UserTask userTask={currentUserTask} setUserTask={setCurrentUserTask} />
+                                                ) : null}
+                                            </Box>
+                                        </>
+                                    ) : (
+                                        <Box
+                                            sx={{
+                                                mt: 3,
+                                                mb: 2,
+                                                px: 2,
+                                                py: 3,
+                                                backgroundColor: '#f5f5f5',
+                                                border: '1px solid #ccc',
+                                                borderRadius: '8px',
+                                                textAlign: 'center'
+                                            }}
+                                        >
+                                            <Typography variant="h6" gutterBottom color="text.secondary">
+                                                <LockIcon sx={{ verticalAlign: 'middle', mr: 1 }} />
+                                                This task is not open yet
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                The task will be available from: <strong>{dayjs(Task.openDate).format('DD-MM-YYYY HH:mm')}</strong>
+                                            </Typography>
+                                        </Box>
+                                    )
                                 }
-
-                                {Task.files?.length > 0 && (
-                                    <Box sx={{ mt: 3 }}>
-                                        <Typography variant="subtitle1" gutterBottom>
-                                            Attached Files
-                                        </Typography>
-                                        <FileList files={Task.files} isCreate={false} />
-                                    </Box>
-                                )}
                                 {
-                                    Task.role!=="member"?
-                                        <></>
+                                    Task.role!=="member" &&
+                                    <>
+                                        <Typography variant={"h5"}>Users answers</Typography>
+                                    {
+                                        usersTasks.length>0?
+                                        usersTasks?.map((userTask, index)=>{
+                                            return <SubmittedUserTaskCard userTask={userTask} key={index}/>
+                                        })
                                         :
-                                        <></>
+                                        <Typography variant={"h7"} color={"textSecondary"}>User answers will be placed here</Typography>
                                 }
-
+                                    </>
+                                }
                             </Paper>
                         </Box>
                         <ConfirmDialog open={confirmDialogOpen} onClose={()=>setConfirmDialogOpen(false)} title={"Delete task"} message={"Are you sure want to delete task?"} onConfirm={deleteTask}/>
@@ -401,3 +521,4 @@ const TaskPage = () => {
 };
 
 export default observer(TaskPage);
+

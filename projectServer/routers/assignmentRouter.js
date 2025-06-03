@@ -4,14 +4,29 @@ const checkCourseUserMiddleware = require("../middlewares/checkCourseUserMiddlew
 const assignmentController = require("../controllers/assignmentController");
 const checkIsMentorMiddleware = require("../middlewares/CheckIsMentorMiddleware");
 
+assignmentRouter.get("/active", authMiddleware, assignmentController.getUserAssignments);
+assignmentRouter.get("/active/grouped", authMiddleware, assignmentController.getUserAssignmentsGroupedByCourse);
 assignmentRouter.get("/:id", authMiddleware, checkCourseUserMiddleware, assignmentController.getCourseAssignments);
+assignmentRouter.get("/:id/test/:testId/testAttempt", authMiddleware, checkCourseUserMiddleware, assignmentController.getUserAttempt);
 assignmentRouter.post("/:id/task", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.createTask);
 assignmentRouter.get("/:id/task/:taskId", authMiddleware, checkCourseUserMiddleware, assignmentController.getTask);
 assignmentRouter.delete("/:id/task/:taskId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.deleteTask);
+assignmentRouter.get("/:id/userTask/:taskId", authMiddleware, checkCourseUserMiddleware, assignmentController.getUserTask);
+assignmentRouter.get("/:id/userTask/id/:taskId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.getUserTaskById);
+assignmentRouter.get("/:id/completeTest/:testId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.getCompleteTests);
+assignmentRouter.get("/:id/completeTest/id/:completeTestId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.getCompleteTestById);
+assignmentRouter.get("/:id/userTask/:taskId/complete", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.getCompleteTasks);
+assignmentRouter.put("/:id/userTask/id/:taskId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.setMark);
+assignmentRouter.post("/:id/userTask/:taskId", authMiddleware, checkCourseUserMiddleware, assignmentController.createUserTask);
+assignmentRouter.put("/:id/userTask/:taskId", authMiddleware, checkCourseUserMiddleware, assignmentController.updateUserTask);
+assignmentRouter.delete("/:id/userTask/:taskId", authMiddleware, checkCourseUserMiddleware, assignmentController.deleteUserTask);
 assignmentRouter.put("/:id/task/:taskId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.updateTask);
 assignmentRouter.post("/:id/test", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.createTest);
 assignmentRouter.get("/:id/test/:testId", authMiddleware, checkCourseUserMiddleware, assignmentController.getTest);
 assignmentRouter.delete("/:id/test/:testId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.deleteTest);
 assignmentRouter.put("/:id/test/:testId", authMiddleware, checkCourseUserMiddleware, checkIsMentorMiddleware, assignmentController.updateTest);
+assignmentRouter.get("/:id/testAttempt/:testId", authMiddleware, checkCourseUserMiddleware, assignmentController.checkUserAttempt);
+assignmentRouter.post("/:id/testAttempt/:testId", authMiddleware, checkCourseUserMiddleware, assignmentController.checkTest);
+assignmentRouter.put("/:id/testAttempt/:testId/save-progress", authMiddleware, checkCourseUserMiddleware, assignmentController.saveProgress);
 
 module.exports = assignmentRouter;

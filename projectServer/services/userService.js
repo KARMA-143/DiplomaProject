@@ -136,6 +136,18 @@ class userService {
         const users = await User.findAll({where:{email:{ [Op.iLike]: `%${pattern}%`}, id:{[Op.notIn]: excludedUsersIds}}, limit: 10});
         return users.map(user=>new UserDTO(user));
     }
+
+    async changeUserName(id, name){
+        const t = await sequelize.transaction();
+        try{
+            await User.update({name:name},{where:{id:id}});
+            await t.commit();
+        }
+        catch(err){
+            await t.rollback();
+            throw err;
+        }
+    }
 }
 
 module.exports = new userService();

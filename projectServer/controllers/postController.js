@@ -7,7 +7,6 @@ class PostController {
             const courseId = req.params.id;
             const post = req.body;
             const files = req.files?.files;
-
             const newPost = await postService.createPost(courseId, post, user.id, files);
             return res.status(200).json(newPost);
         }
